@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiplayerDedicatedServer", "MultiplayerDedicatedServer.csproj", "{6A5E36DB-7CE7-4BB4-8905-CC0B2CF66A8F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PBMultiplayerServer", "PBMultiplayerServer\PBMultiplayerServer.csproj", "{EE5732CF-52CA-49B8-8348-D8A6C0ED5E38}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{6A5E36DB-7CE7-4BB4-8905-CC0B2CF66A8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6A5E36DB-7CE7-4BB4-8905-CC0B2CF66A8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6A5E36DB-7CE7-4BB4-8905-CC0B2CF66A8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE5732CF-52CA-49B8-8348-D8A6C0ED5E38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE5732CF-52CA-49B8-8348-D8A6C0ED5E38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE5732CF-52CA-49B8-8348-D8A6C0ED5E38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE5732CF-52CA-49B8-8348-D8A6C0ED5E38}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
