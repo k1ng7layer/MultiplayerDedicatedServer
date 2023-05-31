@@ -17,8 +17,6 @@ namespace PBMultiplayerServer.Core.Impls
         private ITransport _tcpTransport;
         private ITransport _udpTransport;
         private CancellationTokenSource _cancellationTokenSource;
-        
-        private bool _running;
 
         public MultiplayerServer(IPAddress ipAddress, int port)
         {
