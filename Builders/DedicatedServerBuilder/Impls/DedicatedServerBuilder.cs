@@ -9,10 +9,12 @@ namespace MultiplayerDedicatedServer.Builders.DedicatedServerBuilder.Impls
     {
         private ILifetimeScope _serverScope;
         private readonly ContainerBuilder _containerBuilder = new ();
+        private IContainer _container;
 
         public void Dispose()
         {
             _serverScope.Dispose();
+            _container.Dispose();
         }
 
         public IDedicatedServer BuildServer<TServer, TInstaller>() where TServer : IDedicatedServer where TInstaller : IServiceInstaller
@@ -21,9 +23,9 @@ namespace MultiplayerDedicatedServer.Builders.DedicatedServerBuilder.Impls
             serviceInstaller.ConfigureServices(_containerBuilder);
             
             _containerBuilder.RegisterType<TServer>().As<IDedicatedServer>().SingleInstance();
-            _containerBuilder.Build();
+            _container = _containerBuilder.Build();
             
-            _serverScope = _serverScope.BeginLifetimeScope();
+            _serverScope = _container.BeginLifetimeScope();
 
             var server = _serverScope.Resolve<IDedicatedServer>();
 

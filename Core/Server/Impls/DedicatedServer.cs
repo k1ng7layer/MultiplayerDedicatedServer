@@ -5,7 +5,12 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
 {
     public class DedicatedServer : IDedicatedServer
     {
-        private IMultiplayerServer _multiplayerServer;
+        private readonly IMultiplayerServer _multiplayerServer;
+
+        public DedicatedServer(IMultiplayerServer multiplayerServer)
+        {
+            _multiplayerServer = multiplayerServer;
+        }
         
         public void Dispose()
         {
@@ -14,7 +19,10 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
 
         public async Task RunServerAsync()
         {
-            await _multiplayerServer.RunAsync();
+            var udpRun = _multiplayerServer.RunUdpAsync();
+            var tcpRun = _multiplayerServer.RunTcpAsync();
+
+            await Task.WhenAll(udpRun, tcpRun);
         }
     }
 }
