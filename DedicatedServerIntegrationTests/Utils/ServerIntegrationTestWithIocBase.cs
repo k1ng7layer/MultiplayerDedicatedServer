@@ -9,9 +9,9 @@ namespace ServerTests.Utils
     public class ServerIntegrationTestWithIocBase<TServer, TInstaller> 
         where TInstaller : IServiceInstaller, new() where TServer : IDedicatedServer
     {
-        public IContainer Container { get; private set; }
         private ILifetimeScope _lifetimeScope;
-
+        protected IContainer Container { get; private set; }
+        
         [SetUp]
         public void SetUp()
         {
