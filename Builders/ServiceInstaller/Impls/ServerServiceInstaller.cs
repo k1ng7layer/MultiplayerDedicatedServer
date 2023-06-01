@@ -14,6 +14,12 @@ namespace MultiplayerDedicatedServer.Builders.ServiceInstaller.Impls
                 new TypedParameter(typeof(IPAddress), IPAddress.Parse("127.0.0.1")),
                 new TypedParameter(typeof(int), 8888)
             });
+            
+            // builder.BindFromSubstitute<MultiplayerServer, IMultiplayerServer>().As<IMultiplayerServer>().SingleInstance().WithParameters(new []
+            // {
+            //     new TypedParameter(typeof(IPAddress), IPAddress.Parse("127.0.0.1")),
+            //     new TypedParameter(typeof(int), 8888)
+            // });
         }
     }
 }

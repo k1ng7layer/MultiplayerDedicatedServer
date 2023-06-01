@@ -11,10 +11,9 @@ namespace MultiplayerDedicatedServer
         {
             using (var serverBuilder = new DedicatedServerBuilder())
             {
-                var server = serverBuilder.BuildServer<DedicatedServer, ServerServiceInstaller>();
+                using var server = serverBuilder.BuildServer<DedicatedServer, ServerServiceInstaller>();
 
                 await server.RunServerAsync().ConfigureAwait(false);
-                
             }
         }
     }
