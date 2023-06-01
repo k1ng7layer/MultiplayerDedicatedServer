@@ -12,16 +12,20 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
             _multiplayerServer = multiplayerServer;
         }
         
+        public bool Running { get; private set; }
+        
         public void Dispose()
         {
             _multiplayerServer.Dispose();
         }
-
+        
         public async Task RunServerAsync()
         {
             var udpRun = _multiplayerServer.RunUdpAsync();
             var tcpRun = _multiplayerServer.RunTcpAsync();
 
+            Running = true;
+            
             await Task.WhenAll(udpRun, tcpRun);
         }
     }

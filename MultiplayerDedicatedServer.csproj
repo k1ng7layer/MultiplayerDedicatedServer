@@ -11,6 +11,19 @@
 
     <ItemGroup>
       <PackageReference Include="Autofac" Version="7.0.1" />
+      <PackageReference Include="NUnit" Version="3.13.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="DedicatedServerIntegrationTests\UnitTest1.cs">
+        <Link>ServerTests\UnitTest1.cs</Link>
+      </Compile>
+      <Compile Update="DedicatedServerIntegrationTests\Utils\ServerIntegrationTestWithIocBase.cs">
+        <Link>ServerTests\Utils\ServerIntegrationTestWithIocBase.cs</Link>
+      </Compile>
+      <Compile Update="DedicatedServerIntegrationTests\ServerIsRunningTest.cs">
+        <Link>ServerTests\ServerIsRunningTest.cs</Link>
+      </Compile>
     </ItemGroup>
 
 </Project>
