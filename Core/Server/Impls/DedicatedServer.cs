@@ -21,12 +21,9 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
         
         public async Task RunServerAsync()
         {
-            var udpRun = _multiplayerServer.RunUdpAsync();
-            var tcpRun = _multiplayerServer.RunTcpAsync();
-
             Running = true;
             
-            await Task.WhenAll(udpRun, tcpRun);
+            await _multiplayerServer.RunAsync();
         }
     }
 }

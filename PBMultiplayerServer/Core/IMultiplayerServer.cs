@@ -6,10 +6,8 @@ namespace PBMultiplayerServer.Core
     public interface IMultiplayerServer : IDisposable
     {
         bool IsRunning { get; }
-        Task RunUdpAsync();
-        Task RunTcpAsync();
-        void RunTcp();
-        void RunUdp();
+        Task RunAsync();
+        void Run();
         void Stop();
         void OnDataReceivedCallback(Action<byte[]> callback);
     }

@@ -3,18 +3,19 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using PBMultiplayerServer.Core.Factories;
 
 namespace PBMultiplayerServer.Transport.UDP.Impls
 {
     public class UdpTransport : ITransport
     {
-        private readonly Socket _serverUdpConnection;
+        private readonly ISocketProxy _socket;
         private CancellationToken _cancellationToken;
 
-        public UdpTransport(IPEndPoint ipEndPoint)
+        public UdpTransport(ISocketProxy socket, IPEndPoint ipEndPoint)
         {
-            _serverUdpConnection = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            _serverUdpConnection.Bind(ipEndPoint);
+            _socket = socket;
+            _socket.Bind(ipEndPoint);
         }
 
         public async Task ProcessAsync(CancellationToken cancellationToken)
@@ -28,7 +29,7 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
                 while (!_cancellationToken.IsCancellationRequested)
                 {
                     //todo: прочитать про SocketFlags;
-                    var connection = await _serverUdpConnection.ReceiveAsync(data, SocketFlags.None);
+                    var connection = await _socket.ReceiveAsync(data, SocketFlags.None);
                     if (connection > 0)
                     {
                         await Console.Out.WriteAsync($"user connected via UDP, received bytes = {connection} \n");
@@ -44,7 +45,7 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
 
         public void Dispose()
         {
-            _serverUdpConnection?.Dispose();
+            _socket?.Dispose();
         }
     }
 }

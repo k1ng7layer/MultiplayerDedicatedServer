@@ -26,6 +26,11 @@ namespace PBMultiplayerServer.Core.Factories.Impl
             _socket.Bind(localEP);
         }
 
+        public void Listen(int backlog)
+        {
+            _socket.Listen(backlog);
+        }
+
         public async Task<ISocketProxy> AcceptAsync()
         {
             var acceptTask = await _socket.AcceptAsync();
@@ -40,6 +45,11 @@ namespace PBMultiplayerServer.Core.Factories.Impl
             var data = await _socket.ReceiveAsync(buffer, socketFlags);
 
             return data;
+        }
+
+        public void Dispose()
+        {
+            _socket?.Dispose();
         }
     }
 }
