@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -11,6 +12,7 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
     {
         private readonly ISocketProxy _socket;
         private CancellationToken _cancellationToken;
+        private readonly List<Action<Connection>> clientConnectedListeners = new();
 
         public UdpTransport(ISocketProxy socket, IPEndPoint ipEndPoint)
         {
@@ -28,11 +30,13 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             
                 while (!_cancellationToken.IsCancellationRequested)
                 {
+                    var iEndpoint = new IPEndPoint(IPAddress.Any, 0);
                     //todo: прочитать про SocketFlags;
-                    var connection = await _socket.ReceiveAsync(data, SocketFlags.None);
-                    if (connection > 0)
+                    var receiveFromResult = await _socket.ReceiveFromAsync(data, SocketFlags.None, iEndpoint);
+                    if (receiveFromResult.ReceivedBytes > 0)
                     {
-                        await Console.Out.WriteAsync($"user connected via UDP, received bytes = {connection} \n");
+                        OnClientConnected(new UdpConnection(iEndpoint));
+                        await Console.Out.WriteAsync($"user connected via UDP, received bytes = {receiveFromResult.ReceivedBytes} \n");
                     }
                 }
             }
@@ -40,6 +44,19 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             {
                 Console.WriteLine(e);
                 throw;
+            }
+        }
+
+        public void AddClientConnectedListener(Action<Connection> clientConnectedCallback)
+        {
+            
+        }
+
+        private void OnClientConnected(Connection socketProxy)
+        {
+            foreach (var listener in clientConnectedListeners)
+            {
+                listener?.Invoke(socketProxy);
             }
         }
 

@@ -15,7 +15,7 @@ namespace PBMultiplayerServer.Core.Impls
     {
         private readonly IPAddress _ipAddress;
         private readonly int _port;
-        private readonly Dictionary<IPEndPoint, ITransport> _connections = new();
+        private readonly Dictionary<IPEndPoint, ISocketProxy> _connections = new();
         private readonly ISocketProxyFactory _socketProxyFactory;
         private readonly EProtocolType _protocolType;
         private ITransport _tcpTransport;
