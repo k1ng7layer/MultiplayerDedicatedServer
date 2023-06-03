@@ -26,7 +26,7 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             
             try
             {
-                var data = new byte[2];
+                var data = new byte[1024];
             
                 while (!_cancellationToken.IsCancellationRequested)
                 {
