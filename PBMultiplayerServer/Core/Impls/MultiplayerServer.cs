@@ -15,13 +15,14 @@ namespace PBMultiplayerServer.Core.Impls
     {
         private readonly IPAddress _ipAddress;
         private readonly int _port;
-        private readonly Dictionary<IPEndPoint, ISocketProxy> _connections = new();
+        private readonly object _locker = new ();
         private readonly ISocketProxyFactory _socketProxyFactory;
         private readonly EProtocolType _protocolType;
         private ITransport _tcpTransport;
         private ITransport _udpTransport;
         private CancellationTokenSource _cancellationTokenSource;
-
+        private Dictionary<IPEndPoint, Connection> _connections = new();
+        
         public MultiplayerServer(IPAddress ipAddress, int port, 
             ISocketProxyFactory socketProxyFactory, 
             EProtocolType protocolType)
@@ -31,6 +32,8 @@ namespace PBMultiplayerServer.Core.Impls
             _socketProxyFactory = socketProxyFactory;
             _protocolType = protocolType;
         }
+
+        public IDictionary<IPEndPoint, Connection> Connections => _connections;
         
         public bool IsRunning { get; private set; }
         
@@ -68,7 +71,8 @@ namespace PBMultiplayerServer.Core.Impls
                 connectionTasks.Add(updConnection);
                 connectionTasks.Add(tcpConnection);
             }
-                
+            
+            
             await Task.WhenAll(connectionTasks);
         }
 
@@ -101,6 +105,18 @@ namespace PBMultiplayerServer.Core.Impls
             
             _tcpTransport = new TcpTransport(tcpSocketListener, iEndPointTcp);
             _udpTransport = new UdpTransport(udpSocketListener, iEndPointUdp);
+            
+            _tcpTransport.AddClientConnectedListener(OnClientConnected);
+            _udpTransport.AddClientConnectedListener(OnClientConnected);
+        }
+
+        private void OnClientConnected(Connection connection)
+        {
+            lock (_locker)
+            {
+                if(!_connections.ContainsKey(connection.RemoteEndpoint))
+                    _connections.Add(connection.RemoteEndpoint, connection);
+            }
         }
     }
 }

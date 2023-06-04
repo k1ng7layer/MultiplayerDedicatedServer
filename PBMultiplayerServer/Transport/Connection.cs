@@ -4,7 +4,7 @@ namespace PBMultiplayerServer.Transport
 {
     public abstract class Connection
     {
-        public IPEndPoint RemoteEndpoint { get; protected set; }
+        public IPEndPoint RemoteEndpoint { get; }
 
         public Connection(IPEndPoint remoteEndpoint)
         {

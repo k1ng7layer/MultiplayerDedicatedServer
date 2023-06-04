@@ -9,15 +9,15 @@ namespace PBMultiplayerServer.Transport.TCP
 {
     public class TcpTransport : ITransport
     {
-        private ISocketProxy _socket;
         private readonly List<Action<Connection>> clientConnectedListeners = new();
-
+        private readonly ISocketProxy _socket;
+        
         public TcpTransport(ISocketProxy socketProxy, IPEndPoint ipEndPoint)
         {
             _socket = socketProxy;
             _socket.Bind(ipEndPoint);
         }
-        
+
         public async Task ProcessAsync(CancellationToken cancellationToken)
         {
             _socket.Listen(1000);
@@ -25,7 +25,9 @@ namespace PBMultiplayerServer.Transport.TCP
             while (true)
             {
                 var clientSocket = await _socket.AcceptAsync();
+                
                 OnClientConnected(new TcpConnection(clientSocket.RemoteEndpoint, clientSocket));
+    
                 Console.WriteLine("user connected via TCP");
             }
         }
@@ -39,7 +41,7 @@ namespace PBMultiplayerServer.Transport.TCP
         {
             foreach (var listener in clientConnectedListeners)
             {
-                listener?.Invoke(socketProxy);
+                listener.Invoke(socketProxy);
             }
         }
 

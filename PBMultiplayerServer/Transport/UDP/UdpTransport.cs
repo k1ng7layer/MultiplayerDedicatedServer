@@ -20,6 +20,8 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             _socket.Bind(ipEndPoint);
         }
 
+        public event Action<Connection> ClientConnected;
+
         public async Task ProcessAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
