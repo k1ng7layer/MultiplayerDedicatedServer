@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Text;
 
 namespace PBMultiplayerServer.Core.Messages
@@ -6,11 +7,12 @@ namespace PBMultiplayerServer.Core.Messages
     public abstract class NetworkMessage : INetworkMessage
     {
         protected const int HEADERS_LENGTH = 8;
-        
+        protected const int INITIAL_SIZE = 1024;
+
         public int WritePos { get; internal set; }
         public byte[] Message { get; protected set; }
         
-        public virtual void OnPooled()
+        public virtual void OnRetrieved()
         {
             
         }
@@ -20,7 +22,7 @@ namespace PBMultiplayerServer.Core.Messages
             
         }
 
-        protected void AddInt(int value)
+        public void AddInt(int value)
         {
             var bytes = BitConverter.GetBytes(value);
 
@@ -83,6 +85,21 @@ namespace PBMultiplayerServer.Core.Messages
             Message[WritePos] = bytes[0];
 
             WritePos += 1;
+        }
+        
+        public void AddVector3(Vector3 value)
+        {
+            AddFloat(value.X);
+            AddFloat(value.Y);
+            AddFloat(value.Z);
+        }
+        
+        public void AddQuaternion(Quaternion value)
+        {
+            AddFloat(value.X);
+            AddFloat(value.Y);
+            AddFloat(value.Z);
+            AddFloat(value.W);
         }
     }
 }

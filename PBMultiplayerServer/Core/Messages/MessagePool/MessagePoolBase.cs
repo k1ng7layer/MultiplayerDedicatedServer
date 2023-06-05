@@ -14,7 +14,7 @@ namespace MultiplayerDedicatedServer.PBMultiplayerServer.Core.Messages.MessagePo
             _messageFactory = messageFactory;
         }
 
-        public T GetMessage()
+        public T Retrieve()
         {
             T result;
 

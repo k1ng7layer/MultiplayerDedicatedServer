@@ -1,8 +1,7 @@
 ﻿namespace PBMultiplayerServer.Core.Messages
 {
-    public enum EMessageType
+    public static class MessageProviderExtensions
     {
-        Connect,
-        Reject,
+        
     }
 }

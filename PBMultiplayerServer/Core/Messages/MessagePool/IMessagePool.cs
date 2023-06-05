@@ -2,7 +2,7 @@
 {
     public interface IMessagePool<T> where T : INetworkMessage
     {
-        T GetMessage();
+        T RetrieveMessage();
         void ReturnMessage(T message);
     }
 }

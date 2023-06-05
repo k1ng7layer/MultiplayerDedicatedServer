@@ -2,7 +2,7 @@
 {
     public interface IPooledMessage
     {
-        void OnPooled();
+        void OnRetrieved();
         void Reset();
     }
 }
