@@ -27,4 +27,8 @@
       </Compile>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="PBMultiplayerServer\Core\Messages\MessagePool\Impl" />
+    </ItemGroup>
+
 </Project>
