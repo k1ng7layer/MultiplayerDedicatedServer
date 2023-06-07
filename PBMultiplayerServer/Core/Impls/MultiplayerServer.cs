@@ -106,8 +106,13 @@ namespace PBMultiplayerServer.Core.Impls
             _tcpTransport = new TcpTransport(tcpSocketListener, iEndPointTcp);
             _udpTransport = new UdpTransport(udpSocketListener, iEndPointUdp);
             
-            // _tcpTransport.AddMessageReceivedListener(OnClientConnected);
-            // _udpTransport.AddMessageReceivedListener(OnClientConnected);
+            _tcpTransport.AddMessageReceivedListener(OnClientConnected);
+            _udpTransport.AddMessageReceivedListener(OnClientConnected);
+        }
+
+        private void OnClientConnected(byte[] arg1, int arg2, IPEndPoint arg3)
+        {
+            Console.WriteLine($"Client connected from {arg3}");
         }
 
         private void OnClientConnected(Connection connection)

@@ -19,6 +19,11 @@ namespace PBMultiplayerServer.Transport.TCP
             _networkStreamProxy = networkStreamProxy;
         }
 
+        public override void StartReceive()
+        {
+            
+        }
+
         public override async Task ReceiveAsync()
         {
             try

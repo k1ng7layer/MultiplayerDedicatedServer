@@ -50,11 +50,6 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
 
         public void AddMessageReceivedListener(Action<byte[], int, IPEndPoint> clientConnectedCallback)
         {
-            throw new NotImplementedException();
-        }
-
-        public void AddClientConnectedListener(Action<byte[], int, IPEndPoint> clientConnectedCallback)
-        {
             _clientConnectedListeners.Add(clientConnectedCallback);
         }
 
