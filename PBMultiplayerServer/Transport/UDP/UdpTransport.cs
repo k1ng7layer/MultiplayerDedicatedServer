@@ -12,15 +12,13 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
     {
         private readonly ISocketProxy _socket;
         private CancellationToken _cancellationToken;
-        private readonly List<Action<Connection>> clientConnectedListeners = new();
+        private readonly List<Action<byte[], int, IPEndPoint>> _clientConnectedListeners = new();
 
-        public UdpTransport(ISocketProxy socket, IPEndPoint ipEndPoint)
+        public UdpTransport(ISocketProxy socket, EndPoint ipEndPoint)
         {
             _socket = socket;
             _socket.Bind(ipEndPoint);
         }
-
-        public event Action<Connection> ClientConnected;
 
         public async Task ProcessAsync(CancellationToken cancellationToken)
         {
@@ -35,9 +33,10 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
                     var iEndpoint = new IPEndPoint(IPAddress.Any, 0);
                     //todo: прочитать про SocketFlags;
                     var receiveFromResult = await _socket.ReceiveFromAsync(data, SocketFlags.None, iEndpoint);
+                    
                     if (receiveFromResult.ReceivedBytes > 0)
                     {
-                        OnClientConnected(new UdpConnection(iEndpoint));
+                        OnMessageReceived(data, receiveFromResult.ReceivedBytes, iEndpoint);
                         await Console.Out.WriteAsync($"user connected via UDP, received bytes = {receiveFromResult.ReceivedBytes} \n");
                     }
                 }
@@ -49,16 +48,21 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             }
         }
 
-        public void AddClientConnectedListener(Action<Connection> clientConnectedCallback)
+        public void AddMessageReceivedListener(Action<byte[], int, IPEndPoint> clientConnectedCallback)
         {
-            
+            throw new NotImplementedException();
         }
 
-        private void OnClientConnected(Connection socketProxy)
+        public void AddClientConnectedListener(Action<byte[], int, IPEndPoint> clientConnectedCallback)
         {
-            foreach (var listener in clientConnectedListeners)
+            _clientConnectedListeners.Add(clientConnectedCallback);
+        }
+
+        private void OnMessageReceived(byte[] data, int amount, IPEndPoint ipEndPoint)
+        {
+            foreach (var listener in _clientConnectedListeners)
             {
-                listener?.Invoke(socketProxy);
+                listener?.Invoke(data, amount, ipEndPoint);
             }
         }
 

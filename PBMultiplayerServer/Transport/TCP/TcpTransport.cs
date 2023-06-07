@@ -1,40 +1,127 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Core.Factories;
+using PBMultiplayerServer.Core.Stream.Impl;
 
 namespace PBMultiplayerServer.Transport.TCP
 {
-    public class TcpTransport : ITransport
+    public class TcpTransport : NetworkTransport
     {
         private readonly List<Action<Connection>> clientConnectedListeners = new();
+        private readonly List<Task> _runningTasks = new();
         private readonly ISocketProxy _socket;
-        
-        public TcpTransport(ISocketProxy socketProxy, IPEndPoint ipEndPoint)
+        private readonly EndPoint _transportIpEndPoint;
+        private readonly List<Connection> _activeConnections = new ();
+        private bool _running;
+        private bool _disposedValue;
+
+        public TcpTransport(ISocketProxy socketProxy, 
+            EndPoint transportIpEndPoint)
         {
             _socket = socketProxy;
-            _socket.Bind(ipEndPoint);
+            _transportIpEndPoint = transportIpEndPoint;
         }
-
-        public async Task ProcessAsync(CancellationToken cancellationToken)
+    
+        public override async Task UpdateAsync(CancellationToken cancellationToken)
         {
-            _socket.Listen(1000);
+            if(_running)
+                return;
+            
+            _socket.Listen(10);
+            
+            _running = true;
             
             while (true)
             {
                 var clientSocket = await _socket.AcceptAsync();
                 
-                OnClientConnected(new TcpConnection(clientSocket.RemoteEndpoint, clientSocket));
-    
-                Console.WriteLine("user connected via TCP");
+                HandleNewConnection(clientSocket);
             }
         }
 
-        public void AddClientConnectedListener(Action<Connection> clientConnectedCallback)
+        public override void Start()
         {
-            clientConnectedListeners.Add(clientConnectedCallback);
+            if(_running)
+                return;
+            
+            _running = true;
+            _socket.Bind(_transportIpEndPoint);
+            _socket.Listen(10);
+        }
+
+        public override void Update()
+        {
+            try
+            {
+                Accept();
+                
+                foreach (var connection in _activeConnections)
+                    connection.Receive();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        public override void Stop()
+        {
+            _running = false;
+            _socket.Close();
+        }
+
+        private void Accept()
+        {
+            if (_socket.Poll(0, SelectMode.SelectRead))
+            {
+                var socketProxy = _socket.Accept();
+                var tcpStream = new NetworkStreamProxy(socketProxy);
+                var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, socketProxy, tcpStream);
+              
+                _activeConnections.Add(tcpConnection);
+                
+                OnClientConnected(tcpConnection);
+            }
+        }
+
+        private void CloseConnections()
+        {
+            foreach (var active in _activeConnections)
+            {
+                active.CloseConnection();
+            }
+            
+            _activeConnections.Clear();
+        }
+
+        private async Task HandleNewConnection(ISocketProxy socketProxy)
+        {
+            var tcpStream = new NetworkStreamProxy(socketProxy);
+            
+            using (var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, socketProxy, tcpStream))
+            {
+                try
+                {
+                    var task = tcpConnection.ReceiveAsync();
+                    
+                    _runningTasks.Add(task);
+                    _activeConnections.Add(tcpConnection);
+                    
+                    OnClientConnected(tcpConnection);
+                    
+                    await task.ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+            }
         }
 
         private void OnClientConnected(Connection socketProxy)
@@ -45,9 +132,19 @@ namespace PBMultiplayerServer.Transport.TCP
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            _socket?.Dispose();
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _socket.Dispose();
+                }
+
+                _disposedValue = true;
+            }
+            
+            base.Dispose(disposing);
         }
     }
 }

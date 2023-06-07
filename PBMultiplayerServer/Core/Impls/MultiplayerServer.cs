@@ -18,7 +18,7 @@ namespace PBMultiplayerServer.Core.Impls
         private readonly object _locker = new ();
         private readonly ISocketProxyFactory _socketProxyFactory;
         private readonly EProtocolType _protocolType;
-        private ITransport _tcpTransport;
+        private NetworkTransport _tcpTransport;
         private ITransport _udpTransport;
         private CancellationTokenSource _cancellationTokenSource;
         private Dictionary<IPEndPoint, Connection> _connections = new();
@@ -55,7 +55,7 @@ namespace PBMultiplayerServer.Core.Impls
             
             if (_protocolType == EProtocolType.TCP)
             {
-                var tcpConnection = Task.Run(async () => await _tcpTransport.ProcessAsync(_cancellationTokenSource.Token));
+                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync(_cancellationTokenSource.Token));
                 connectionTasks.Add(tcpConnection);
             }
             else if(_protocolType == EProtocolType.UDP)
@@ -65,7 +65,7 @@ namespace PBMultiplayerServer.Core.Impls
             }
             else
             {
-                var tcpConnection = Task.Run(async () => await _tcpTransport.ProcessAsync(_cancellationTokenSource.Token));
+                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync(_cancellationTokenSource.Token));
                 var updConnection = Task.Run(async () => await _udpTransport.ProcessAsync(_cancellationTokenSource.Token));
                 
                 connectionTasks.Add(updConnection);
@@ -106,8 +106,8 @@ namespace PBMultiplayerServer.Core.Impls
             _tcpTransport = new TcpTransport(tcpSocketListener, iEndPointTcp);
             _udpTransport = new UdpTransport(udpSocketListener, iEndPointUdp);
             
-            _tcpTransport.AddClientConnectedListener(OnClientConnected);
-            _udpTransport.AddClientConnectedListener(OnClientConnected);
+            // _tcpTransport.AddMessageReceivedListener(OnClientConnected);
+            // _udpTransport.AddMessageReceivedListener(OnClientConnected);
         }
 
         private void OnClientConnected(Connection connection)

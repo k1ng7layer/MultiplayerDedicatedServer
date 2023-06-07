@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Threading.Tasks;
 
 namespace PBMultiplayerServer.Transport
 {
@@ -10,5 +11,10 @@ namespace PBMultiplayerServer.Transport
         {
             RemoteEndpoint = remoteEndpoint;
         }
+
+        public abstract Task ReceiveAsync();
+        public abstract void Receive();
+        public abstract void CloseConnection();
+
     }
 }
