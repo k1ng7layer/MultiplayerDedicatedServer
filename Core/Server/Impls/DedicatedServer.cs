@@ -23,6 +23,8 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
         {
             Running = true;
             
+            _multiplayerServer.Start();
+            
             await _multiplayerServer.RunAsync();
         }
     }

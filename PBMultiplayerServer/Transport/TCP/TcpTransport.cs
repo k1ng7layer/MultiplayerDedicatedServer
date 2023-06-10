@@ -16,6 +16,7 @@ namespace PBMultiplayerServer.Transport.TCP
         private readonly ISocketProxy _socket;
         private readonly EndPoint _transportIpEndPoint;
         private readonly List<Connection> _activeConnections = new ();
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
         private bool _running;
         private bool _disposedValue;
 
@@ -26,16 +27,18 @@ namespace PBMultiplayerServer.Transport.TCP
             _transportIpEndPoint = transportIpEndPoint;
         }
     
-        public override async Task UpdateAsync(CancellationToken cancellationToken)
+        public override async Task UpdateAsync()
         {
             if(_running)
                 return;
             
-            _socket.Listen(10);
+            var cancellationToken = _cancellationTokenSource.Token;
+            _socket.Bind(_transportIpEndPoint);
+            _socket.Listen(1);
             
             _running = true;
             
-            while (true)
+            while (_running && !cancellationToken.IsCancellationRequested)
             {
                 var clientSocket = await _socket.AcceptAsync();
                 
@@ -72,6 +75,7 @@ namespace PBMultiplayerServer.Transport.TCP
         public override void Stop()
         {
             _running = false;
+            CloseConnections();
             _socket.Close();
         }
 
@@ -139,6 +143,7 @@ namespace PBMultiplayerServer.Transport.TCP
                 if (disposing)
                 {
                     _socket.Dispose();
+                    _cancellationTokenSource.Dispose();
                 }
 
                 _disposedValue = true;

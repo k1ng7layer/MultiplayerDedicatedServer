@@ -4,5 +4,7 @@
     {
         Connect,
         Reject,
+        StartSession,
+        JoinSession
     }
 }

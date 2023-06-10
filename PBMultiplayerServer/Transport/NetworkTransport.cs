@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PBMultiplayerServer.Transport
 {
     public abstract class NetworkTransport : IDisposable
     {
-        protected readonly List<Action<byte[], int, IPEndPoint>> _clientConnectedListeners = new();
+        protected readonly List<Action<DataReceivedEventArgs>> _clientConnectedListeners = new();
 
-        public void AddMessageReceivedListener(Action<byte[], int, IPEndPoint> clientConnectedCallback)
+        public void AddMessageReceivedListener(Action<DataReceivedEventArgs> dataReceivedEventArgs)
         {
-            _clientConnectedListeners.Add(clientConnectedCallback);
+            _clientConnectedListeners.Add(dataReceivedEventArgs);
         }
         
-        public abstract Task UpdateAsync(CancellationToken cancellationToken);
+        public abstract Task UpdateAsync();
         public abstract void Start();
         public abstract void Update();
         public abstract void Stop();

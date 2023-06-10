@@ -5,6 +5,8 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Core.Factories;
+using PBMultiplayerServer.Core.Messages;
+using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 using PBMultiplayerServer.Transport.TCP;
 using PBMultiplayerServer.Transport.UDP.Impls;
@@ -19,11 +21,15 @@ namespace PBMultiplayerServer.Core.Impls
         private readonly ISocketProxyFactory _socketProxyFactory;
         private readonly EProtocolType _protocolType;
         private NetworkTransport _tcpTransport;
-        private ITransport _udpTransport;
+        private NetworkTransport _udpTransport;
         private CancellationTokenSource _cancellationTokenSource;
         private Dictionary<IPEndPoint, Connection> _connections = new();
-        
-        public MultiplayerServer(IPAddress ipAddress, int port, 
+        private readonly List<Action<DataReceivedEventArgs>> _dataReceivedListeners = new();
+        private List<Client> _connectedClients;
+        private Predicate<bool> _connectionApprovalHandler;
+
+        public MultiplayerServer(IPAddress ipAddress, 
+            int port, 
             ISocketProxyFactory socketProxyFactory, 
             EProtocolType protocolType)
         {
@@ -33,21 +39,24 @@ namespace PBMultiplayerServer.Core.Impls
             _protocolType = protocolType;
         }
 
+        public IEnumerable<Client> ConnectedClients => _connectedClients;
         public IDictionary<IPEndPoint, Connection> Connections => _connections;
         
         public bool IsRunning { get; private set; }
-        
-        public void Dispose()
+
+        public void Start()
         {
-            _tcpTransport.Dispose();
-            _udpTransport.Dispose();
-        }
-        
-        public async Task RunAsync()
-        {
+            CreateServerConnection();
             IsRunning = true;
             
-            CreateServerConnection();
+            _tcpTransport.Start();
+            _udpTransport.Start();
+        }
+
+        public async Task RunAsync()
+        {
+            if(!IsRunning)
+                return;
             
             _cancellationTokenSource = new CancellationTokenSource();
 
@@ -55,30 +64,33 @@ namespace PBMultiplayerServer.Core.Impls
             
             if (_protocolType == EProtocolType.TCP)
             {
-                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync(_cancellationTokenSource.Token));
+                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync());
                 connectionTasks.Add(tcpConnection);
             }
             else if(_protocolType == EProtocolType.UDP)
             {
-                var updConnection = Task.Run(async () => await _udpTransport.ProcessAsync(_cancellationTokenSource.Token));
+                var updConnection = Task.Run(async () => await _udpTransport.UpdateAsync());
                 connectionTasks.Add(updConnection);
             }
             else
             {
-                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync(_cancellationTokenSource.Token));
-                var updConnection = Task.Run(async () => await _udpTransport.ProcessAsync(_cancellationTokenSource.Token));
+                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync());
+                var updConnection = Task.Run(async () => await _udpTransport.UpdateAsync());
                 
                 connectionTasks.Add(updConnection);
                 connectionTasks.Add(tcpConnection);
             }
-            
             
             await Task.WhenAll(connectionTasks);
         }
 
         public void Run()
         {
+            if(!IsRunning)
+                return;
             
+            _tcpTransport.Update();
+            _udpTransport.Update();
         }
         
         public void Stop()
@@ -86,9 +98,17 @@ namespace PBMultiplayerServer.Core.Impls
             _cancellationTokenSource.Cancel();
             
             IsRunning = false;
+            
+            _tcpTransport.Stop();
+            _udpTransport.Stop();
         }
 
-        public void OnDataReceivedCallback(Action<byte[]> callback)
+        public void OnClientConnectedCallback(Action<Client> clientConnectedCallback, NetworkMessage message)
+        {
+            
+        }
+
+        public void AddConnectionApprovalHandler(Func<bool> connectionApprovalHandler)
         {
             
         }
@@ -106,13 +126,13 @@ namespace PBMultiplayerServer.Core.Impls
             _tcpTransport = new TcpTransport(tcpSocketListener, iEndPointTcp);
             _udpTransport = new UdpTransport(udpSocketListener, iEndPointUdp);
             
-            _tcpTransport.AddMessageReceivedListener(OnClientConnected);
-            _udpTransport.AddMessageReceivedListener(OnClientConnected);
+            _tcpTransport.AddMessageReceivedListener(OnDataReceived);
+            _udpTransport.AddMessageReceivedListener(OnDataReceived);
         }
 
-        private void OnClientConnected(byte[] arg1, int arg2, IPEndPoint arg3)
+        private void OnDataReceived(DataReceivedEventArgs dataReceivedEventArgs)
         {
-            Console.WriteLine($"Client connected from {arg3}");
+            Console.WriteLine($"received data amount {dataReceivedEventArgs.Amount}");
         }
 
         private void OnClientConnected(Connection connection)
@@ -122,6 +142,12 @@ namespace PBMultiplayerServer.Core.Impls
                 if(!_connections.ContainsKey(connection.RemoteEndpoint))
                     _connections.Add(connection.RemoteEndpoint, connection);
             }
+        }
+        
+        public void Dispose()
+        {
+            _tcpTransport.Dispose();
+            _udpTransport.Dispose();
         }
     }
 }

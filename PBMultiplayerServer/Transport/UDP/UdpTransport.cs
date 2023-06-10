@@ -8,27 +8,28 @@ using PBMultiplayerServer.Core.Factories;
 
 namespace PBMultiplayerServer.Transport.UDP.Impls
 {
-    public class UdpTransport : ITransport
+    public class UdpTransport : NetworkTransport
     {
         private readonly ISocketProxy _socket;
-        private CancellationToken _cancellationToken;
-        private readonly List<Action<byte[], int, IPEndPoint>> _clientConnectedListeners = new();
-
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly Dictionary<IPEndPoint, Connection> _activeClients = new();
+        private bool _running;
+        
         public UdpTransport(ISocketProxy socket, EndPoint ipEndPoint)
         {
             _socket = socket;
             _socket.Bind(ipEndPoint);
         }
 
-        public async Task ProcessAsync(CancellationToken cancellationToken)
+        public override async Task UpdateAsync()
         {
-            _cancellationToken = cancellationToken;
+            var cancellationToken = _cancellationTokenSource.Token;
             
             try
             {
                 var data = new byte[1024];
             
-                while (!_cancellationToken.IsCancellationRequested)
+                while (_running && !cancellationToken.IsCancellationRequested)
                 {
                     var iEndpoint = new IPEndPoint(IPAddress.Any, 0);
                     //todo: прочитать про SocketFlags;
@@ -37,7 +38,6 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
                     if (receiveFromResult.ReceivedBytes > 0)
                     {
                         OnMessageReceived(data, receiveFromResult.ReceivedBytes, iEndpoint);
-                        await Console.Out.WriteAsync($"user connected via UDP, received bytes = {receiveFromResult.ReceivedBytes} \n");
                     }
                 }
             }
@@ -48,22 +48,42 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             }
         }
 
-        public void AddMessageReceivedListener(Action<byte[], int, IPEndPoint> clientConnectedCallback)
+        public override void Start()
         {
-            _clientConnectedListeners.Add(clientConnectedCallback);
+            _running = true;
+        }
+
+        public override void Update()
+        {
+            // var data = new byte[1024];
+            // var result = _socket.ReceiveFrom()
+        }
+
+        public override void Stop()  
+        {
+            _cancellationTokenSource.Cancel();
+            _running = false;
         }
 
         private void OnMessageReceived(byte[] data, int amount, IPEndPoint ipEndPoint)
         {
+            var hasConnection = _activeClients.ContainsKey(ipEndPoint);
+            
+            if(!hasConnection)
+                return;
+            
+            var connection = _activeClients[ipEndPoint];
+            
             foreach (var listener in _clientConnectedListeners)
             {
-                listener?.Invoke(data, amount, ipEndPoint);
+                listener?.Invoke(new DataReceivedEventArgs(data, amount, connection));
             }
         }
 
         public void Dispose()
         {
             _socket?.Dispose();
+            _cancellationTokenSource.Dispose();
         }
     }
 }
