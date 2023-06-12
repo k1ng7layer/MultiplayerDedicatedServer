@@ -186,20 +186,25 @@ namespace PBMultiplayerServer.Core.Impls
             {
                 var message = _incomeMessageQueue.Dequeue();
                 
-                HandleMessage(message);
+                HandleIncomeMessage(message);
                 
                 _incomeMessagePool.ReturnMessage(message);
             }
         }
 
-        private void HandleMessage(NetworkMessage message)
+        private void HandleIncomeMessage(IncomeMessage message)
         {
-            
-        }
-
-        private void OnClientConnected(TcpConnection connection)
-        {
-            var messageLength = connection.ReadFromStream(4);
+            switch (message.MessageType)
+            {
+                case EMessageType.Connect:
+                    break;
+                case EMessageType.Reject:
+                    break;
+                case EMessageType.StartSession:
+                    break;
+                case EMessageType.JoinSession:
+                    break;
+            }
         }
 
         public void Dispose()
