@@ -8,6 +8,7 @@ using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Stream.Impl;
 using PBMultiplayerServer.Transport.Interfaces;
+using PBMultiplayerServer.Utils;
 
 namespace PBMultiplayerServer.Transport.TCP
 {
@@ -86,7 +87,7 @@ namespace PBMultiplayerServer.Transport.TCP
         {
             if (_socket.Poll(0, SelectMode.SelectRead))
             {
-                var minMessageSize = int.Parse(_configuration["MinMessageSize"]);
+                var minMessageSize = int.Parse(_configuration[ConfigurationKeys.MinMessageSize]);
                 
                 var socketProxy = _socket.Accept();
                 
@@ -115,7 +116,7 @@ namespace PBMultiplayerServer.Transport.TCP
         private async Task HandleNewConnectionAsync(ISocketProxy socketProxy)
         {
             var tcpStream = new NetworkStreamProxy(socketProxy);
-            var minMessageSize = int.Parse(_configuration["MinMessageSize"]);
+            var minMessageSize = int.Parse(_configuration[ConfigurationKeys.MinMessageSize]);
             
             using (var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, 
                        socketProxy, tcpStream, minMessageSize))

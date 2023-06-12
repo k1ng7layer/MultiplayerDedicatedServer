@@ -180,7 +180,6 @@ namespace PBMultiplayerServer.Core.Impls
 
         private void ReadMessageQueue()
         {
-            //Console.WriteLine("ReadMessageQueue");
             if (_incomeMessageQueue.Count > 0)
             {
                 var message = _incomeMessageQueue.Dequeue();

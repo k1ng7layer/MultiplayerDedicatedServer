@@ -7,7 +7,7 @@ using PBMultiplayerServer.Core.Stream;
 
 namespace PBMultiplayerServer.Transport.TCP
 {
-    public class TcpConnection : Connection, IDisposable
+    public class TcpConnection : Connection
     {
         private readonly ISocketProxy _socketProxy;
         private readonly INetworkStreamProxy _networkStreamProxy;
