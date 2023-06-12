@@ -10,17 +10,17 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
 {
     public class UdpTransport : NetworkTransport, IDataReceivedListener
     {
-        private readonly ISocketProxy _socket;
+        private readonly ISocketProxy _socketReceiver;
         private readonly UdpConnection _serverConnection;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly Dictionary<IPEndPoint, Connection> _activeClients = new();
         private bool _running;
         
-        public UdpTransport(ISocketProxy socket, EndPoint ipEndPoint)
+        public UdpTransport(ISocketProxy socketReceiver, EndPoint ipEndPoint)
         {
-            _socket = socket;
-            _serverConnection = new UdpConnection((IPEndPoint)ipEndPoint, _socket);
-            _socket.Bind(ipEndPoint);
+            _socketReceiver = socketReceiver;
+            _serverConnection = new UdpConnection((IPEndPoint)ipEndPoint, _socketReceiver);
+            _socketReceiver.Bind(ipEndPoint);
         }
 
         public override async Task UpdateAsync()
@@ -28,7 +28,15 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             if(!_running)
                 return;
 
-            await _serverConnection.ReceiveAsync();
+            try
+            {
+                await _serverConnection.ReceiveAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public override void Start()
@@ -55,11 +63,11 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             var hasConnection = _activeClients.ContainsKey(ipEndPoint);
             
             if(!hasConnection)
-                return;
+                _activeClients.Add(ipEndPoint, new UdpConnection(ipEndPoint, _socketReceiver));
             
             var connection = _activeClients[ipEndPoint];
             
-            foreach (var listener in _clientConnectedListeners)
+            foreach (var listener in _receiveDataListeners)
             {
                 listener?.Invoke(new DataReceivedEventArgs(data, amount, connection));
             }
@@ -67,13 +75,13 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
 
         public void Dispose()
         {
-            _socket?.Dispose();
+            _socketReceiver?.Dispose();
             _cancellationTokenSource.Dispose();
         }
 
         public void OnDataReceived(byte[] data, int byteCount, IPEndPoint remoteEndpoint)
         {
-            Console.WriteLine($"OnDataReceived");
+            OnMessageReceived(data, byteCount, remoteEndpoint);
         }
     }
 }

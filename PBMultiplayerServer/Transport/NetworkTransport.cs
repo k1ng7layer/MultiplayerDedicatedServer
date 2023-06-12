@@ -6,11 +6,11 @@ namespace PBMultiplayerServer.Transport
 {
     public abstract class NetworkTransport : IDisposable
     {
-        protected readonly List<Func<DataReceivedEventArgs, Task>> _clientConnectedListeners = new();
+        protected readonly List<Func<DataReceivedEventArgs, Task>> _receiveDataListeners = new();
 
         public void AddMessageReceivedListener(Func<DataReceivedEventArgs, Task> dataReceivedEventArgs)
         {
-            _clientConnectedListeners.Add(dataReceivedEventArgs);
+            _receiveDataListeners.Add(dataReceivedEventArgs);
         }
         
         public abstract Task UpdateAsync();

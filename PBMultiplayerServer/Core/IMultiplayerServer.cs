@@ -20,8 +20,7 @@ namespace PBMultiplayerServer.Core
         Task UpdateAsync();
         void Update();
         void Stop();
-        void OnClientConnectedCallback(Action<Client> clientConnectedCallback, NetworkMessage message);
-        void AddConnectionApprovalHandler(Func<byte[],bool> connectionApprovalHandler);
         void AddServerTickHandler(Action tickHandler);
+        void AddMessageReceiveHandler(Action<EMessageType, byte[]> message);
     }
 }

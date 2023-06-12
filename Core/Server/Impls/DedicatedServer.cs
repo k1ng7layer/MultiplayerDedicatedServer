@@ -22,17 +22,26 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
         
         public async Task RunServerAsync()
         {
-            Running = true;
+            try
+            {
+                Running = true;
             
-            _multiplayerServer.AddServerTickHandler(Tick);
-            _multiplayerServer.Start();
+                _multiplayerServer.AddServerTickHandler(Tick);
+                _multiplayerServer.Start();
 
-            await _multiplayerServer.UpdateAsync();
+                await _multiplayerServer.UpdateAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+      
         }
 
         private void Tick()
         {
-            Console.WriteLine($"server time sec = {_multiplayerServer.ServerTickDeltaTimeSpan.TotalSeconds}");
+            //Console.WriteLine($"server time sec = {_multiplayerServer.ServerTickDeltaTimeSpan.TotalSeconds}");
         }
     }
 }

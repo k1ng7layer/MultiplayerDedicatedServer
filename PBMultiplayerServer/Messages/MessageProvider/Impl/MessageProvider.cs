@@ -6,14 +6,14 @@ namespace PBMultiplayerServer.Core.Messages
 {
     public class MessageProvider : IMessageProvider
     {
-        private readonly IMessagePool<OutcomeMessage> _messagePool;
+        private readonly IMessagePool<IncomeMessage> _messagePool;
 
-        public MessageProvider(IMessagePool<OutcomeMessage> messagePool)
+        public MessageProvider(IMessagePool<IncomeMessage> messagePool)
         {
             _messagePool = messagePool;
         }
 
-        public OutcomeMessage CreateConnectionRejectMessage(EMessageType messageType, ERejectReason rejectReason)
+        public IncomeMessage CreateConnectionRejectMessage(EMessageType messageType, ERejectReason rejectReason)
         {
             var message = _messagePool.RetrieveMessage();
           
@@ -25,7 +25,7 @@ namespace PBMultiplayerServer.Core.Messages
 
         public EMessageType GetMessageType(byte[] messageBytes)
         {
-            var messageTypeSpan = new Span<byte>(messageBytes, 4, sizeof(int));
+            var messageTypeSpan = new Span<byte>(messageBytes, 0, sizeof(int));
             var messageType = (EMessageType)BitConverter.ToInt32(messageTypeSpan);
 
             return messageType;

@@ -34,9 +34,10 @@ namespace PBMultiplayerServer.Core.Impls
         private List<Client> _connectedClients;
         private Predicate<byte[]> _connectionApprovalHandler;
         private IMessagePool<IncomeMessage> _incomeMessagePool;
-        private readonly IMessageProvider _messageProvider;
+        private IMessageProvider _messageProvider;
         private readonly Queue<IncomeMessage> _incomeMessageQueue = new();
         private Action _serverUpdateCallBack;
+        private Action<EMessageType, byte[]> _messageReceivedHandler;
 
         public MultiplayerServer(IPAddress ipAddress, 
             int port, 
@@ -63,6 +64,7 @@ namespace PBMultiplayerServer.Core.Impls
         {
             var messageFactory = new IncomeMessageFactory();
             _incomeMessagePool = new IncomeMessagePool(messageFactory);
+            _messageProvider = new MessageProvider(_incomeMessagePool);
             CreateServerConnection();
             IsRunning = true;
             
@@ -108,7 +110,7 @@ namespace PBMultiplayerServer.Core.Impls
             });
             
             var tcpConnectionTask = Task.Run(async () => await _tcpTransport.UpdateAsync());
-            var updConnectionTask = Task.Run(async () => await _udpTransport.UpdateAsync());
+            var updConnectionTask = Task.Run(async () =>await _udpTransport.UpdateAsync());
             
             serverMainTasks.Add(updConnectionTask);
             serverMainTasks.Add(tcpConnectionTask);
@@ -139,19 +141,14 @@ namespace PBMultiplayerServer.Core.Impls
             _udpTransport.Stop();
         }
 
-        public void OnClientConnectedCallback(Action<Client> clientConnectedCallback, NetworkMessage message)
-        {
-            
-        }
-
-        public void AddConnectionApprovalHandler(Func<byte[], bool> connectionApprovalHandler)
-        {
-            
-        }
-
         public void AddServerTickHandler(Action tickHandler)
         {
             _serverUpdateCallBack = tickHandler;
+        }
+
+        public void AddMessageReceiveHandler(Action<EMessageType, byte[]> message)
+        {
+            _messageReceivedHandler = message;
         }
 
         private void CreateServerConnection()
@@ -174,6 +171,7 @@ namespace PBMultiplayerServer.Core.Impls
         private async Task OnDataReceived(DataReceivedEventArgs dataReceivedEventArgs)
         {
             var messageType = _messageProvider.GetMessageType(dataReceivedEventArgs.DataBuffer);
+            Console.WriteLine($"OnDataReceived, type = {messageType}");
             var message = _incomeMessagePool.RetrieveMessage();
             message.SetHeader(messageType, dataReceivedEventArgs.DataBuffer);
             
@@ -182,6 +180,7 @@ namespace PBMultiplayerServer.Core.Impls
 
         private void ReadMessageQueue()
         {
+            //Console.WriteLine("ReadMessageQueue");
             if (_incomeMessageQueue.Count > 0)
             {
                 var message = _incomeMessageQueue.Dequeue();
