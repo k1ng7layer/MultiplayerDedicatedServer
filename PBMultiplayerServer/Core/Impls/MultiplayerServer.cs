@@ -53,7 +53,7 @@ namespace PBMultiplayerServer.Core.Impls
         public TimeSpan ServerTimeSpan { get; private set; }
         public TimeSpan ServerTickDeltaTimeSpan { get; private set; }
         public int ServerTickCount { get; private set; }
-        public TimeSpan LastServerTick { get; private set; }
+        public TimeSpan LastServerTickSpan { get; private set; }
         public IEnumerable<Client> ConnectedClients => _connectedClients;
         public IDictionary<IPEndPoint, Connection> Connections => _connections;
         public bool IsRunning { get; private set; }
@@ -72,43 +72,40 @@ namespace PBMultiplayerServer.Core.Impls
         public Task UpdateAsync()
         {
             _cancellationTokenSource = new CancellationTokenSource();
-            
-            if(!IsRunning)
-                return Task.FromCanceled(_cancellationTokenSource.Token);
-            
+
             var serverMainTasks = new List<Task>();
-            
-            var tcpConnectionTask = Task.Run(async () => await _tcpTransport.UpdateAsync());
-            var updConnectionTask = Task.Run(async () => await _udpTransport.UpdateAsync());
-            
+
             var updateTickRate = int.Parse(_serverConfiguration["ServerUpdateTickRate"]);
             
             var serverTickTask = Task.Run(async () =>
             {
-                while (IsRunning)
+                while (IsRunning && !_cancellationTokenSource.IsCancellationRequested)
                 {
                     var tickTimeMilliseconds = 1000 / updateTickRate;
 
                     await Task.Delay(tickTimeMilliseconds);
                     
-                    var timeSpawn = TimeSpan.FromMilliseconds(tickTimeMilliseconds);
+                    var tickTimeSpan = TimeSpan.FromMilliseconds(tickTimeMilliseconds);
                     
-                    ServerTimeSpan += timeSpawn;
-                    ServerTickDeltaTimeSpan = ServerTimeSpan - LastServerTick;
-                    LastServerTick = ServerTimeSpan;
+                    ServerTimeSpan += tickTimeSpan;
+                    ServerTickDeltaTimeSpan = ServerTimeSpan - LastServerTickSpan;
+                    LastServerTickSpan = ServerTimeSpan;
                     ServerTickCount++;
                 }
             });
 
             var handleIncomeMessagesTask = Task.Run(async () =>
             {
-                while (IsRunning)
+                while (IsRunning && !_cancellationTokenSource.IsCancellationRequested)
                 {
                     await Task.Delay(ServerTickDeltaTimeSpan.Milliseconds);
                     
                     ReadMessageQueue();
                 }
             });
+            
+            var tcpConnectionTask = Task.Run(async () => await _tcpTransport.UpdateAsync());
+            var updConnectionTask = Task.Run(async () => await _udpTransport.UpdateAsync());
             
             serverMainTasks.Add(updConnectionTask);
             serverMainTasks.Add(tcpConnectionTask);

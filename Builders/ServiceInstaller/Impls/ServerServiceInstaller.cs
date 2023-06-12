@@ -18,8 +18,9 @@ namespace MultiplayerDedicatedServer.Builders.ServiceInstaller.Impls
             
             configuration.AddConfiguration("ReceiveTickRate", "30");
             configuration.AddConfiguration("SendTickRate", "30");
-            
-            builder.RegisterType<DefaultConfiguration>().As<IConfiguration>().SingleInstance();
+            configuration.AddConfiguration("ServerUpdateTickRate", "35");
+
+            builder.RegisterInstance<IConfiguration>(configuration);
             
             builder.RegisterType<MultiplayerServer>().As<IMultiplayerServer>().SingleInstance().WithParameters(new []
             {
