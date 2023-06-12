@@ -36,6 +36,7 @@ namespace PBMultiplayerServer.Core.Impls
         private IMessagePool<IncomeMessage> _incomeMessagePool;
         private readonly IMessageProvider _messageProvider;
         private readonly Queue<IncomeMessage> _incomeMessageQueue = new();
+        private Action _serverUpdateCallBack;
 
         public MultiplayerServer(IPAddress ipAddress, 
             int port, 
@@ -91,6 +92,8 @@ namespace PBMultiplayerServer.Core.Impls
                     ServerTickDeltaTimeSpan = ServerTimeSpan - LastServerTickSpan;
                     LastServerTickSpan = ServerTimeSpan;
                     ServerTickCount++;
+
+                    if (_serverUpdateCallBack != null) _serverUpdateCallBack();
                 }
             });
 
@@ -146,9 +149,9 @@ namespace PBMultiplayerServer.Core.Impls
             
         }
 
-        public void ReadMessage()
+        public void AddServerTickHandler(Action tickHandler)
         {
-            
+            _serverUpdateCallBack = tickHandler;
         }
 
         private void CreateServerConnection()

@@ -22,5 +22,6 @@ namespace PBMultiplayerServer.Core
         void Stop();
         void OnClientConnectedCallback(Action<Client> clientConnectedCallback, NetworkMessage message);
         void AddConnectionApprovalHandler(Func<byte[],bool> connectionApprovalHandler);
+        void AddServerTickHandler(Action tickHandler);
     }
 }

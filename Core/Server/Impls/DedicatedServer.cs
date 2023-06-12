@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using PBMultiplayerServer.Core;
 
 namespace MultiplayerDedicatedServer.Core.Server.Impls
@@ -23,13 +24,15 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
         {
             Running = true;
             
+            _multiplayerServer.AddServerTickHandler(Tick);
             _multiplayerServer.Start();
+
             await _multiplayerServer.UpdateAsync();
         }
 
-        private Task<bool> Func(byte[] arg)
+        private void Tick()
         {
-            return Task.FromResult(true);
+            Console.WriteLine($"server time sec = {_multiplayerServer.ServerTickDeltaTimeSpan.TotalSeconds}");
         }
     }
 }
