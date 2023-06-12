@@ -10,7 +10,9 @@ namespace PBMultiplayerServer.Core
 {
     public interface IMultiplayerServer : IDisposable
     {
-        float ServerTick { get;}
+        TimeSpan ServerTimeSpan { get;}
+        TimeSpan ServerTickDeltaTimeSpan { get;}
+        int ServerTickCount { get;}
         IEnumerable<Client> ConnectedClients { get; }
         IDictionary<IPEndPoint, Connection> Connections { get; }
         bool IsRunning { get; }
