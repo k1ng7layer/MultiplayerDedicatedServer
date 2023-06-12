@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using MultiplayerDedicatedServer.Configuration;
+using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Messages;
 using PBMultiplayerServer.Core.Messages.Factory.Impl;
@@ -95,7 +95,7 @@ namespace PBMultiplayerServer.Core.Impls
                     LastServerTickSpan = ServerTimeSpan;
                     ServerTickCount++;
 
-                    if (_serverUpdateCallBack != null) _serverUpdateCallBack();
+                    _serverUpdateCallBack?.Invoke();
                 }
             });
 
@@ -110,7 +110,7 @@ namespace PBMultiplayerServer.Core.Impls
             });
             
             var tcpConnectionTask = Task.Run(async () => await _tcpTransport.UpdateAsync());
-            var updConnectionTask = Task.Run(async () =>await _udpTransport.UpdateAsync());
+            var updConnectionTask = Task.Run(async () => await _udpTransport.UpdateAsync());
             
             serverMainTasks.Add(updConnectionTask);
             serverMainTasks.Add(tcpConnectionTask);
@@ -161,7 +161,7 @@ namespace PBMultiplayerServer.Core.Impls
             var udpSocketListener =
                 _socketProxyFactory.CreateSocketProxy(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             
-            _tcpTransport = new TcpTransport(tcpSocketListener, iEndPointTcp);
+            _tcpTransport = new TcpTransport(tcpSocketListener, iEndPointTcp, _serverConfiguration);
             _udpTransport = new UdpTransport(udpSocketListener, iEndPointUdp);
             
             _tcpTransport.AddMessageReceivedListener(OnDataReceived);

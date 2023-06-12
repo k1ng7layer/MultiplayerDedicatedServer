@@ -16,6 +16,5 @@ namespace ServerTests.Utils
     
             await sender.SendToAsync(data,SocketFlags.None, destinationEndpoint);
         }
-        
     }
 }

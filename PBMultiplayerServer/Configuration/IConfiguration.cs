@@ -1,10 +1,10 @@
-﻿namespace MultiplayerDedicatedServer.Configuration
+﻿namespace PBMultiplayerServer.Configuration
 {
     public interface IConfiguration
     {
-        void AddConfiguration(string key, string value);
+        void Add(string key, string value);
         void AddJsonFile(string file);
-        string GetConfiguration(string key);
+        string Get(string key);
         string this [string key] { get; }
     }
 }

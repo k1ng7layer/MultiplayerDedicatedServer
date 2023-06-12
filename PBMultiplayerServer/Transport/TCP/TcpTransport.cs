@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Stream.Impl;
 using PBMultiplayerServer.Transport.Interfaces;
@@ -16,21 +17,24 @@ namespace PBMultiplayerServer.Transport.TCP
         private readonly List<Task> _runningTasks = new();
         private readonly ISocketProxy _socket;
         private readonly EndPoint _transportIpEndPoint;
-        private readonly List<Connection> _activeConnections = new ();
+        private readonly Dictionary<IPEndPoint, TcpConnection> _activeConnections = new ();
         private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly IConfiguration _configuration;
         private bool _running;
         private bool _disposedValue;
 
         public TcpTransport(ISocketProxy socketProxy, 
-            EndPoint transportIpEndPoint)
+            EndPoint transportIpEndPoint, 
+            IConfiguration configuration)
         {
             _socket = socketProxy;
             _transportIpEndPoint = transportIpEndPoint;
+            _configuration = configuration;
         }
     
         public override async Task UpdateAsync()
         {
-            if(_running)
+            if(!_running)
                 return;
             
             var cancellationToken = _cancellationTokenSource.Token;
@@ -62,7 +66,7 @@ namespace PBMultiplayerServer.Transport.TCP
                 Accept();
                 
                 foreach (var connection in _activeConnections)
-                    connection.Receive();
+                    connection.Value.Receive();
             }
             catch (Exception e)
             {
@@ -82,13 +86,19 @@ namespace PBMultiplayerServer.Transport.TCP
         {
             if (_socket.Poll(0, SelectMode.SelectRead))
             {
+                var minMessageSize = int.Parse(_configuration["MinMessageSize"]);
+                
                 var socketProxy = _socket.Accept();
+                
                 var tcpStream = new NetworkStreamProxy(socketProxy);
-                var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, socketProxy, tcpStream);
+                
+                var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, 
+                    socketProxy, tcpStream, 
+                    minMessageSize);
               
                 OnClientConnected(tcpConnection);
                 
-                _activeConnections.Add(tcpConnection);
+                _activeConnections.Add(socketProxy.RemoteEndpoint, tcpConnection);
             }
         }
 
@@ -96,7 +106,7 @@ namespace PBMultiplayerServer.Transport.TCP
         {
             foreach (var active in _activeConnections)
             {
-                active.CloseConnection();
+                active.Value.CloseConnection();
             }
             
             _activeConnections.Clear();
@@ -105,15 +115,20 @@ namespace PBMultiplayerServer.Transport.TCP
         private async Task HandleNewConnectionAsync(ISocketProxy socketProxy)
         {
             var tcpStream = new NetworkStreamProxy(socketProxy);
+            var minMessageSize = int.Parse(_configuration["MinMessageSize"]);
             
-            using (var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, socketProxy, tcpStream))
+            using (var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, 
+                       socketProxy, tcpStream, minMessageSize))
             {
                 try
                 {
-                   var task = tcpConnection.ReceiveAsync();
+                    _activeConnections.Add(socketProxy.RemoteEndpoint, tcpConnection);
+                    tcpConnection.StartReceive();
+                    var task = tcpConnection.ReceiveAsync();
                    _runningTasks.Add(task);
-                   _activeConnections.Add(tcpConnection);
+                  
                    tcpConnection.AddDataReceivedListener(this);
+                 
                    await task.ConfigureAwait(false); 
                 }
                 catch (Exception e)
@@ -150,7 +165,15 @@ namespace PBMultiplayerServer.Transport.TCP
 
         public void OnDataReceived(byte[] data, int byteCount, IPEndPoint remoteEndpoint)
         {
+            if(!_activeConnections.ContainsKey(remoteEndpoint))
+                return;
             
+            var connection = _activeConnections[remoteEndpoint];
+            
+            foreach (var listener in _receiveDataListeners)
+            {
+                listener?.Invoke(new DataReceivedEventArgs(data, byteCount, connection));
+            }
         }
     }
 }

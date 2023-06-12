@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using Autofac;
-using MultiplayerDedicatedServer.Configuration;
-using MultiplayerDedicatedServer.Configuration.Impl;
+using PBMultiplayerServer.Configuration;
+using PBMultiplayerServer.Configuration.Impl;
 using PBMultiplayerServer.Core;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Factories.Impl;
@@ -16,9 +16,10 @@ namespace MultiplayerDedicatedServer.Builders.ServiceInstaller.Impls
         {
             var configuration = new DefaultConfiguration();
             
-            configuration.AddConfiguration("ReceiveTickRate", "30");
-            configuration.AddConfiguration("SendTickRate", "30");
-            configuration.AddConfiguration("ServerUpdateTickRate", "35");
+            configuration.Add("ReceiveTickRate", "30");
+            configuration.Add("SendTickRate", "30");
+            configuration.Add("ServerUpdateTickRate", "35");
+            configuration.Add("MinMessageSize", "4");
 
             builder.RegisterInstance<IConfiguration>(configuration);
             

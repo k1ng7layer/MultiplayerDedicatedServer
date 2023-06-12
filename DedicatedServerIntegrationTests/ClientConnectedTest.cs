@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
-using MultiplayerDedicatedServer.Configuration.Impl;
 using NUnit.Framework;
+using PBMultiplayerServer.Configuration.Impl;
 using PBMultiplayerServer.Core.Impls;
 using PBMultiplayerServer.Transport;
 using ServerTests.Helpers;
