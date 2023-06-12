@@ -19,6 +19,8 @@ namespace PBMultiplayerServer.Core.Factories
         Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, IPEndPoint endPoint);
         int ReceiveFrom(byte[] buffer, SocketFlags socketFlags, ref EndPoint remoteEP);
         int Receive(byte[] receiveBuffer, int receiveSize, int startIndex);
+        Task SendAsync(byte[] data);
+        void Send(byte[] data);
         bool Poll(int microSeconds, SelectMode mode);
         void Close();
     }

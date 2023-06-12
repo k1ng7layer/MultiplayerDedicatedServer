@@ -1,4 +1,5 @@
-﻿using PBMultiplayerServer.Core.Messages.Impl;
+﻿using System;
+using PBMultiplayerServer.Core.Messages.Impl;
 using PBMultiplayerServer.Core.Messages.MessagePool;
 
 namespace PBMultiplayerServer.Core.Messages
@@ -21,5 +22,14 @@ namespace PBMultiplayerServer.Core.Messages
             
             return message;
         }
+
+        public EMessageType GetMessageType(byte[] messageBytes)
+        {
+            var messageTypeSpan = new Span<byte>(messageBytes, 4, sizeof(int));
+            var messageType = (EMessageType)BitConverter.ToInt32(messageTypeSpan);
+
+            return messageType;
+        }
+        
     }
 }

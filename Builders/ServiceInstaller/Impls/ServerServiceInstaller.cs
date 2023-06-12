@@ -14,6 +14,11 @@ namespace MultiplayerDedicatedServer.Builders.ServiceInstaller.Impls
     {
         public void ConfigureServices(ContainerBuilder builder)
         {
+            var configuration = new DefaultConfiguration();
+            
+            configuration.AddConfiguration("ReceiveTickRate", "30");
+            configuration.AddConfiguration("SendTickRate", "30");
+            
             builder.RegisterType<DefaultConfiguration>().As<IConfiguration>().SingleInstance();
             
             builder.RegisterType<MultiplayerServer>().As<IMultiplayerServer>().SingleInstance().WithParameters(new []
@@ -21,7 +26,8 @@ namespace MultiplayerDedicatedServer.Builders.ServiceInstaller.Impls
                 new TypedParameter(typeof(IPAddress), IPAddress.Parse("127.0.0.1")),
                 new TypedParameter(typeof(int), 8888),
                 new TypedParameter(typeof(ISocketProxyFactory), new SocketProxyFactory()),
-                new TypedParameter(typeof(EProtocolType), EProtocolType.UDP_TCP)
+                new TypedParameter(typeof(EProtocolType), EProtocolType.UDP_TCP),
+                new TypedParameter(typeof(IConfiguration), configuration)
             });
         }
     }

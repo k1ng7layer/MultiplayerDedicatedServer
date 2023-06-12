@@ -71,6 +71,16 @@ namespace ServerTests.Helpers
             throw new NotImplementedException();
         }
 
+        public Task SendAsync(byte[] data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Send(byte[] data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool Poll(int microSeconds, SelectMode mode)
         {
             throw new NotImplementedException();

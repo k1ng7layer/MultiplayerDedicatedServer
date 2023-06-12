@@ -10,14 +10,15 @@ namespace PBMultiplayerServer.Core
 {
     public interface IMultiplayerServer : IDisposable
     {
+        float ServerTick { get;}
         IEnumerable<Client> ConnectedClients { get; }
         IDictionary<IPEndPoint, Connection> Connections { get; }
         bool IsRunning { get; }
         void Start();
-        Task RunAsync();
-        void Run();
+        Task UpdateAsync();
+        void Update();
         void Stop();
         void OnClientConnectedCallback(Action<Client> clientConnectedCallback, NetworkMessage message);
-        void AddConnectionApprovalHandler(Func<bool> connectionApprovalHandler);
+        void AddConnectionApprovalHandler(Func<byte[],bool> connectionApprovalHandler);
     }
 }

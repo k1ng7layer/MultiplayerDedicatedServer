@@ -91,6 +91,16 @@ namespace PBMultiplayerServer.Core.Factories.Impl
             return data;
         }
 
+        public async Task SendAsync(byte[] data)
+        {
+            await _socket.SendAsync(data, SocketFlags.None);
+        }
+
+        public void Send(byte[] data)
+        {
+            _socket.Send(data);
+        }
+
         public bool Poll(int microSeconds, SelectMode mode)
         {
             return _socket.Poll(microSeconds, mode);

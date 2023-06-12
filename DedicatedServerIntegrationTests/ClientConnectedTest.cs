@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
+using MultiplayerDedicatedServer.Configuration.Impl;
 using NUnit.Framework;
 using PBMultiplayerServer.Core.Impls;
 using PBMultiplayerServer.Transport;
@@ -12,10 +13,12 @@ namespace ServerTests
         [Test]
         public async Task TestClientConnected()
         {
-            var socketFactoryMock = new SocketProxyFactoryMock();
-            var server = new MultiplayerServer(IPAddress.Any, 8888, socketFactoryMock, EProtocolType.TCP);
+            var config = new DefaultConfiguration();
             
-            server.RunAsync();
+            var socketFactoryMock = new SocketProxyFactoryMock();
+            var server = new MultiplayerServer(IPAddress.Any, 8888, socketFactoryMock, EProtocolType.TCP, config);
+            
+            server.UpdateAsync();
             
             Assert.True(server.IsRunning);
             

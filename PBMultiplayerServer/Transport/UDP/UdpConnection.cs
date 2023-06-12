@@ -94,6 +94,16 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             _socketProxy.Close();
         }
 
+        public override void Send(byte[] data)
+        {
+            _socketProxy.Send(data);
+        }
+
+        public override async Task SendAsync(byte[] data)
+        {
+            await _socketProxy.SendAsync(data);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (!_disposedValue)

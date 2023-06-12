@@ -6,9 +6,9 @@ namespace PBMultiplayerServer.Transport
 {
     public abstract class NetworkTransport : IDisposable
     {
-        protected readonly List<Action<DataReceivedEventArgs>> _clientConnectedListeners = new();
+        protected readonly List<Func<DataReceivedEventArgs, Task>> _clientConnectedListeners = new();
 
-        public void AddMessageReceivedListener(Action<DataReceivedEventArgs> dataReceivedEventArgs)
+        public void AddMessageReceivedListener(Func<DataReceivedEventArgs, Task> dataReceivedEventArgs)
         {
             _clientConnectedListeners.Add(dataReceivedEventArgs);
         }

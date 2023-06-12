@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Core.Factories;
+using PBMultiplayerServer.Transport.Interfaces;
 
 namespace PBMultiplayerServer.Transport.UDP.Impls
 {
-    public class UdpTransport : NetworkTransport
+    public class UdpTransport : NetworkTransport, IDataReceivedListener
     {
         private readonly ISocketProxy _socket;
+        private readonly UdpConnection _serverConnection;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly Dictionary<IPEndPoint, Connection> _activeClients = new();
         private bool _running;
@@ -18,51 +19,35 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
         public UdpTransport(ISocketProxy socket, EndPoint ipEndPoint)
         {
             _socket = socket;
+            _serverConnection = new UdpConnection((IPEndPoint)ipEndPoint, _socket);
             _socket.Bind(ipEndPoint);
         }
 
         public override async Task UpdateAsync()
         {
-            var cancellationToken = _cancellationTokenSource.Token;
-            
-            try
-            {
-                var data = new byte[1024];
-            
-                while (_running && !cancellationToken.IsCancellationRequested)
-                {
-                    var iEndpoint = new IPEndPoint(IPAddress.Any, 0);
-                    //todo: прочитать про SocketFlags;
-                    var receiveFromResult = await _socket.ReceiveFromAsync(data, SocketFlags.None, iEndpoint);
-                    
-                    if (receiveFromResult.ReceivedBytes > 0)
-                    {
-                        OnMessageReceived(data, receiveFromResult.ReceivedBytes, iEndpoint);
-                    }
-                }
-            }
-            catch (SocketException e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
+            if(!_running)
+                return;
+
+            await _serverConnection.ReceiveAsync();
         }
 
         public override void Start()
         {
             _running = true;
+            _serverConnection.AddDataReceivedListener(this);
         }
 
         public override void Update()
         {
-            // var data = new byte[1024];
-            // var result = _socket.ReceiveFrom()
+            if(_running)
+                _serverConnection.Receive();
         }
 
         public override void Stop()  
         {
-            _cancellationTokenSource.Cancel();
             _running = false;
+            _cancellationTokenSource.Cancel();
+            _serverConnection.CloseConnection();
         }
 
         private void OnMessageReceived(byte[] data, int amount, IPEndPoint ipEndPoint)
@@ -84,6 +69,11 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
         {
             _socket?.Dispose();
             _cancellationTokenSource.Dispose();
+        }
+
+        public void OnDataReceived(byte[] data, int byteCount, IPEndPoint remoteEndpoint)
+        {
+            Console.WriteLine($"OnDataReceived");
         }
     }
 }

@@ -24,8 +24,12 @@ namespace MultiplayerDedicatedServer.Core.Server.Impls
             Running = true;
             
             _multiplayerServer.Start();
-            
-            await _multiplayerServer.RunAsync();
+            await _multiplayerServer.UpdateAsync();
+        }
+
+        private Task<bool> Func(byte[] arg)
+        {
+            return Task.FromResult(true);
         }
     }
 }

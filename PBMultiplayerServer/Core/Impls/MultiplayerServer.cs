@@ -4,8 +4,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using MultiplayerDedicatedServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Messages;
+using PBMultiplayerServer.Core.Messages.Factory.Impl;
+using PBMultiplayerServer.Core.Messages.Impl;
+using PBMultiplayerServer.Core.Messages.MessagePool;
+using PBMultiplayerServer.Core.Messages.MessagePool.Impl;
 using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 using PBMultiplayerServer.Transport.TCP;
@@ -18,6 +23,7 @@ namespace PBMultiplayerServer.Core.Impls
         private readonly IPAddress _ipAddress;
         private readonly int _port;
         private readonly object _locker = new ();
+        private readonly IConfiguration _serverConfiguration;
         private readonly ISocketProxyFactory _socketProxyFactory;
         private readonly EProtocolType _protocolType;
         private NetworkTransport _tcpTransport;
@@ -26,18 +32,26 @@ namespace PBMultiplayerServer.Core.Impls
         private Dictionary<IPEndPoint, Connection> _connections = new();
         private readonly List<Action<DataReceivedEventArgs>> _dataReceivedListeners = new();
         private List<Client> _connectedClients;
-        private Predicate<bool> _connectionApprovalHandler;
+        private Predicate<byte[]> _connectionApprovalHandler;
+        private IMessagePool<IncomeMessage> _incomeMessagePool;
+        private readonly IMessageProvider _messageProvider;
+        private readonly Queue<IncomeMessage> _incomeMessageQueue = new();
 
         public MultiplayerServer(IPAddress ipAddress, 
             int port, 
             ISocketProxyFactory socketProxyFactory, 
-            EProtocolType protocolType)
+            EProtocolType protocolType, 
+            IConfiguration serverConfiguration)
         {
             _ipAddress = ipAddress;
             _port = port;
             _socketProxyFactory = socketProxyFactory;
             _protocolType = protocolType;
+            _serverConfiguration = serverConfiguration;
         }
+
+        public float ServerTick { get; private set; }
+        public float LastServerTick { get; private set; }
 
         public IEnumerable<Client> ConnectedClients => _connectedClients;
         public IDictionary<IPEndPoint, Connection> Connections => _connections;
@@ -46,6 +60,8 @@ namespace PBMultiplayerServer.Core.Impls
 
         public void Start()
         {
+            var messageFactory = new IncomeMessageFactory();
+            _incomeMessagePool = new IncomeMessagePool(messageFactory);
             CreateServerConnection();
             IsRunning = true;
             
@@ -53,7 +69,7 @@ namespace PBMultiplayerServer.Core.Impls
             _udpTransport.Start();
         }
 
-        public async Task RunAsync()
+        public async Task UpdateAsync()
         {
             if(!IsRunning)
                 return;
@@ -62,35 +78,41 @@ namespace PBMultiplayerServer.Core.Impls
 
             var connectionTasks = new List<Task>();
             
-            if (_protocolType == EProtocolType.TCP)
+            var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync());
+            var updConnection = Task.Run(async () => await _udpTransport.UpdateAsync());
+
+            var handleIncomeMessagesTask = Task.Run(async () =>
             {
-                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync());
-                connectionTasks.Add(tcpConnection);
-            }
-            else if(_protocolType == EProtocolType.UDP)
-            {
-                var updConnection = Task.Run(async () => await _udpTransport.UpdateAsync());
-                connectionTasks.Add(updConnection);
-            }
-            else
-            {
-                var tcpConnection = Task.Run(async () => await _tcpTransport.UpdateAsync());
-                var updConnection = Task.Run(async () => await _udpTransport.UpdateAsync());
+                var messageReadTickRate = float.Parse(_serverConfiguration["ReceiveTickRate"]);
                 
-                connectionTasks.Add(updConnection);
-                connectionTasks.Add(tcpConnection);
-            }
+                while (IsRunning)
+                {
+                    if (ServerTick - LastServerTick >= (1 / messageReadTickRate) || messageReadTickRate <= 0)
+                    {
+                        while (_incomeMessageQueue.Count > 0)
+                        {
+                            ReadMessageQueue();
+                        }
+                    }
+                }
+            });
+            
+            connectionTasks.Add(updConnection);
+            connectionTasks.Add(tcpConnection);
+            connectionTasks.Add(handleIncomeMessagesTask);
             
             await Task.WhenAll(connectionTasks);
         }
 
-        public void Run()
+        public void Update()
         {
             if(!IsRunning)
                 return;
             
             _tcpTransport.Update();
             _udpTransport.Update();
+            
+            ReadMessageQueue();
         }
         
         public void Stop()
@@ -108,7 +130,12 @@ namespace PBMultiplayerServer.Core.Impls
             
         }
 
-        public void AddConnectionApprovalHandler(Func<bool> connectionApprovalHandler)
+        public void AddConnectionApprovalHandler(Func<byte[], bool> connectionApprovalHandler)
+        {
+            
+        }
+
+        public void ReadMessage()
         {
             
         }
@@ -130,20 +157,37 @@ namespace PBMultiplayerServer.Core.Impls
             _udpTransport.AddMessageReceivedListener(OnDataReceived);
         }
 
-        private void OnDataReceived(DataReceivedEventArgs dataReceivedEventArgs)
+        private async Task OnDataReceived(DataReceivedEventArgs dataReceivedEventArgs)
         {
-            Console.WriteLine($"received data amount {dataReceivedEventArgs.Amount}");
+            var messageType = _messageProvider.GetMessageType(dataReceivedEventArgs.DataBuffer);
+            var message = _incomeMessagePool.RetrieveMessage();
+            message.SetHeader(messageType, dataReceivedEventArgs.DataBuffer);
+            
+            _incomeMessageQueue.Enqueue(message);
         }
 
-        private void OnClientConnected(Connection connection)
+        private void ReadMessageQueue()
         {
-            lock (_locker)
+            if (_incomeMessageQueue.Count > 0)
             {
-                if(!_connections.ContainsKey(connection.RemoteEndpoint))
-                    _connections.Add(connection.RemoteEndpoint, connection);
+                var message = _incomeMessageQueue.Dequeue();
+                
+                HandleMessage(message);
+                
+                _incomeMessagePool.ReturnMessage(message);
             }
         }
-        
+
+        private void HandleMessage(NetworkMessage message)
+        {
+            
+        }
+
+        private void OnClientConnected(TcpConnection connection)
+        {
+            var messageLength = connection.ReadFromStream(4);
+        }
+
         public void Dispose()
         {
             _tcpTransport.Dispose();

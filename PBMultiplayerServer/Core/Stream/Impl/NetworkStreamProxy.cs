@@ -35,6 +35,16 @@ namespace PBMultiplayerServer.Core.Stream.Impl
             _networkStream.Close();
         }
 
+        public async Task WriteAsync(byte[] size)
+        {
+            await _networkStream.WriteAsync(size);
+        }
+
+        public async Task FlushAsync()
+        {
+            await _networkStream.FlushAsync();
+        }
+
         public void Dispose()
         {
             _socketProxy?.Dispose();

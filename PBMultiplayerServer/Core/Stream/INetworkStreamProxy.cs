@@ -8,5 +8,7 @@ namespace PBMultiplayerServer.Core.Stream
         Task<int> ReadAsync(byte[] buffer, int offset, int count);
         int Read(byte[] buffer, int offset, int count);
         void Close();
+        Task WriteAsync(byte[] size);
+        Task FlushAsync();
     }
 }

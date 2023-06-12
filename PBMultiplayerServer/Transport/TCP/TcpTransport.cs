@@ -6,10 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Stream.Impl;
+using PBMultiplayerServer.Transport.Interfaces;
 
 namespace PBMultiplayerServer.Transport.TCP
 {
-    public class TcpTransport : NetworkTransport
+    public class TcpTransport : NetworkTransport, IDataReceivedListener
     {
         private readonly List<Action<Connection>> clientConnectedListeners = new();
         private readonly List<Task> _runningTasks = new();
@@ -33,16 +34,14 @@ namespace PBMultiplayerServer.Transport.TCP
                 return;
             
             var cancellationToken = _cancellationTokenSource.Token;
-            _socket.Bind(_transportIpEndPoint);
-            _socket.Listen(1);
-            
+
             _running = true;
             
             while (_running && !cancellationToken.IsCancellationRequested)
             {
                 var clientSocket = await _socket.AcceptAsync();
                 
-                HandleNewConnection(clientSocket);
+                HandleNewConnectionAsync(clientSocket);
             }
         }
 
@@ -87,9 +86,9 @@ namespace PBMultiplayerServer.Transport.TCP
                 var tcpStream = new NetworkStreamProxy(socketProxy);
                 var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, socketProxy, tcpStream);
               
-                _activeConnections.Add(tcpConnection);
-                
                 OnClientConnected(tcpConnection);
+                
+                _activeConnections.Add(tcpConnection);
             }
         }
 
@@ -103,7 +102,7 @@ namespace PBMultiplayerServer.Transport.TCP
             _activeConnections.Clear();
         }
 
-        private async Task HandleNewConnection(ISocketProxy socketProxy)
+        private async Task HandleNewConnectionAsync(ISocketProxy socketProxy)
         {
             var tcpStream = new NetworkStreamProxy(socketProxy);
             
@@ -111,14 +110,11 @@ namespace PBMultiplayerServer.Transport.TCP
             {
                 try
                 {
-                    var task = tcpConnection.ReceiveAsync();
-                    
-                    _runningTasks.Add(task);
-                    _activeConnections.Add(tcpConnection);
-                    
-                    OnClientConnected(tcpConnection);
-                    
-                    await task.ConfigureAwait(false);
+                   var task = tcpConnection.ReceiveAsync();
+                   _runningTasks.Add(task);
+                   _activeConnections.Add(tcpConnection);
+                   tcpConnection.AddDataReceivedListener(this);
+                   await task.ConfigureAwait(false); 
                 }
                 catch (Exception e)
                 {
@@ -127,12 +123,12 @@ namespace PBMultiplayerServer.Transport.TCP
                 }
             }
         }
-
-        private void OnClientConnected(Connection socketProxy)
+        
+        private void OnClientConnected(Connection connection)
         {
             foreach (var listener in clientConnectedListeners)
             {
-                listener.Invoke(socketProxy);
+                listener.Invoke(connection);
             }
         }
 
@@ -150,6 +146,11 @@ namespace PBMultiplayerServer.Transport.TCP
             }
             
             base.Dispose(disposing);
+        }
+
+        public void OnDataReceived(byte[] data, int byteCount, IPEndPoint remoteEndpoint)
+        {
+            
         }
     }
 }

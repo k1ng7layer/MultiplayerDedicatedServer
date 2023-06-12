@@ -21,6 +21,8 @@ namespace PBMultiplayerServer.Transport
         public abstract Task ReceiveAsync();
         public abstract void Receive();
         public abstract void CloseConnection();
+        public abstract void Send(byte[] data);
+        public abstract Task SendAsync(byte[] data);
         
         public void AddDataReceivedListener(IDataReceivedListener dataReceivedListener)
         {

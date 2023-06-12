@@ -103,6 +103,20 @@ namespace PBMultiplayerServer.Transport.TCP
             _socketProxy.Close();
         }
 
+        public override void Send(byte[] data)
+        {
+            
+        }
+
+        public override async Task SendAsync(byte[] data)
+        {
+            var size = BitConverter.GetBytes(data.Length);
+            await _networkStreamProxy.WriteAsync(size);
+            await _networkStreamProxy.FlushAsync();
+            await _networkStreamProxy.WriteAsync(data);
+            await _networkStreamProxy.FlushAsync();
+        }
+
         protected override void Dispose(bool isDisposing)
         {
             if(_disposed)
