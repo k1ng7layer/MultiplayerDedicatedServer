@@ -15,6 +15,7 @@ using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 using PBMultiplayerServer.Transport.TCP;
 using PBMultiplayerServer.Transport.UDP.Impls;
+using PBMultiplayerServer.Utils;
 
 namespace PBMultiplayerServer.Core.Impls
 {
@@ -78,7 +79,7 @@ namespace PBMultiplayerServer.Core.Impls
 
             var serverMainTasks = new List<Task>();
 
-            var updateTickRate = int.Parse(_serverConfiguration["ServerUpdateTickRate"]);
+            var updateTickRate = int.Parse(_serverConfiguration[ConfigurationKeys.ServerUpdateTickRate]);
             
             var serverTickTask = Task.Run(async () =>
             {
@@ -180,7 +181,7 @@ namespace PBMultiplayerServer.Core.Impls
 
         private void ReadMessageQueue()
         {
-            if (_incomeMessageQueue.Count > 0)
+            while (_incomeMessageQueue.Count > 0)
             {
                 var message = _incomeMessageQueue.Dequeue();
                 
