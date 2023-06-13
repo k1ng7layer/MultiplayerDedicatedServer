@@ -23,6 +23,10 @@ namespace PBMultiplayerServer.Core.Factories.Impl
             _remoteEndpoint = (IPEndPoint)_socket.RemoteEndPoint;
         }
 
+        public int Available => _socket.Available;
+        
+        public Socket Socket => _socket;
+        
         public IPEndPoint RemoteEndpoint => _remoteEndpoint;
 
         public void Bind(EndPoint localEP)
@@ -44,9 +48,24 @@ namespace PBMultiplayerServer.Core.Factories.Impl
             return socketProxy;
         }
 
+        public ISocketProxy Accept()
+        {
+            var socket = _socket.Accept();
+            var socketProxy = new SocketProxy(socket);
+
+            return socketProxy;
+        }
+
         public async Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
         {
             var data = await _socket.ReceiveAsync(buffer, socketFlags);
+
+            return data;
+        }
+
+        public async Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, IPEndPoint remoteEndpoint)
+        {
+            var data = await _socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndpoint);
 
             return data;
         }
@@ -58,6 +77,38 @@ namespace PBMultiplayerServer.Core.Factories.Impl
             var receiveFromResult = await _socket.ReceiveFromAsync(buffer, socketFlags, iEndpoint);
 
             return receiveFromResult;
+        }
+
+        public int ReceiveFrom(byte[] buffer, SocketFlags socketFlags, ref EndPoint remoteEP)
+        {
+            return _socket.ReceiveFrom(buffer, socketFlags, ref remoteEP);
+        }
+
+        public int Receive(byte[] receiveBuffer, int receiveSize, int startIndex)
+        {
+            var data = _socket.Receive(receiveBuffer, receiveSize, SocketFlags.None);
+
+            return data;
+        }
+
+        public async Task SendAsync(byte[] data)
+        {
+            await _socket.SendAsync(data, SocketFlags.None);
+        }
+
+        public void Send(byte[] data)
+        {
+            _socket.Send(data);
+        }
+
+        public bool Poll(int microSeconds, SelectMode mode)
+        {
+            return _socket.Poll(microSeconds, mode);
+        }
+
+        public void Close()
+        {
+            _socket.Close();
         }
 
         public void Dispose()

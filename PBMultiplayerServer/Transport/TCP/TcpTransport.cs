@@ -1,53 +1,180 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
+using PBMultiplayerServer.Core.Stream.Impl;
+using PBMultiplayerServer.Transport.Interfaces;
+using PBMultiplayerServer.Utils;
 
 namespace PBMultiplayerServer.Transport.TCP
 {
-    public class TcpTransport : ITransport
+    public class TcpTransport : NetworkTransport, IDataReceivedListener
     {
         private readonly List<Action<Connection>> clientConnectedListeners = new();
+        private readonly List<Task> _runningTasks = new();
         private readonly ISocketProxy _socket;
-        
-        public TcpTransport(ISocketProxy socketProxy, IPEndPoint ipEndPoint)
+        private readonly EndPoint _transportIpEndPoint;
+        private readonly Dictionary<IPEndPoint, TcpConnection> _activeConnections = new ();
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly IConfiguration _configuration;
+        private bool _running;
+        private bool _disposedValue;
+
+        public TcpTransport(ISocketProxy socketProxy, 
+            EndPoint transportIpEndPoint, 
+            IConfiguration configuration)
         {
             _socket = socketProxy;
-            _socket.Bind(ipEndPoint);
+            _transportIpEndPoint = transportIpEndPoint;
+            _configuration = configuration;
         }
-
-        public async Task ProcessAsync(CancellationToken cancellationToken)
+    
+        public override async Task UpdateAsync()
         {
-            _socket.Listen(1000);
+            if(!_running)
+                return;
             
-            while (true)
+            var cancellationToken = _cancellationTokenSource.Token;
+
+            _running = true;
+            
+            while (_running && !cancellationToken.IsCancellationRequested)
             {
                 var clientSocket = await _socket.AcceptAsync();
                 
-                OnClientConnected(new TcpConnection(clientSocket.RemoteEndpoint, clientSocket));
-    
-                Console.WriteLine("user connected via TCP");
+                HandleNewConnectionAsync(clientSocket);
             }
         }
 
-        public void AddClientConnectedListener(Action<Connection> clientConnectedCallback)
+        public override void Start()
         {
-            clientConnectedListeners.Add(clientConnectedCallback);
+            if(_running)
+                return;
+            
+            _running = true;
+            _socket.Bind(_transportIpEndPoint);
+            _socket.Listen(10);
         }
 
-        private void OnClientConnected(Connection socketProxy)
+        public override void Update()
+        {
+            try
+            {
+                Accept();
+                
+                foreach (var connection in _activeConnections)
+                    connection.Value.Receive();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        public override void Stop()
+        {
+            _running = false;
+            CloseConnections();
+            _socket.Close();
+        }
+
+        private void Accept()
+        {
+            if (_socket.Poll(0, SelectMode.SelectRead))
+            {
+                var minMessageSize = int.Parse(_configuration[ConfigurationKeys.MinMessageSize]);
+                
+                var socketProxy = _socket.Accept();
+                
+                var tcpStream = new NetworkStreamProxy(socketProxy);
+                
+                var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, 
+                    socketProxy, tcpStream, 
+                    minMessageSize);
+              
+                OnClientConnected(tcpConnection);
+                
+                _activeConnections.Add(socketProxy.RemoteEndpoint, tcpConnection);
+            }
+        }
+
+        private void CloseConnections()
+        {
+            foreach (var active in _activeConnections)
+            {
+                active.Value.CloseConnection();
+            }
+            
+            _activeConnections.Clear();
+        }
+
+        private async Task HandleNewConnectionAsync(ISocketProxy socketProxy)
+        {
+            var tcpStream = new NetworkStreamProxy(socketProxy);
+            var minMessageSize = int.Parse(_configuration[ConfigurationKeys.MinMessageSize]);
+            
+            using (var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, 
+                       socketProxy, tcpStream, minMessageSize))
+            {
+                try
+                {
+                    _activeConnections.Add(socketProxy.RemoteEndpoint, tcpConnection);
+                    tcpConnection.StartReceive();
+                    var task = tcpConnection.ReceiveAsync();
+                   _runningTasks.Add(task);
+                  
+                   tcpConnection.AddDataReceivedListener(this);
+                 
+                   await task.ConfigureAwait(false); 
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+            }
+        }
+        
+        private void OnClientConnected(Connection connection)
         {
             foreach (var listener in clientConnectedListeners)
             {
-                listener.Invoke(socketProxy);
+                listener.Invoke(connection);
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            _socket?.Dispose();
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _socket.Dispose();
+                    _cancellationTokenSource.Dispose();
+                }
+
+                _disposedValue = true;
+            }
+            
+            base.Dispose(disposing);
+        }
+
+        public void OnDataReceived(byte[] data, int byteCount, IPEndPoint remoteEndpoint)
+        {
+            if(!_activeConnections.ContainsKey(remoteEndpoint))
+                return;
+            
+            var connection = _activeConnections[remoteEndpoint];
+            
+            foreach (var listener in _receiveDataListeners)
+            {
+                listener?.Invoke(new DataReceivedEventArgs(data, byteCount, connection));
+            }
         }
     }
 }

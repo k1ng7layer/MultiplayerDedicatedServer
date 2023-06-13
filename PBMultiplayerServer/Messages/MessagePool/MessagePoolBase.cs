@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using PBMultiplayerServer.Core.Messages;
 using PBMultiplayerServer.Core.Messages.Factory;
+using PBMultiplayerServer.Core.Messages.MessagePool;
 
 namespace MultiplayerDedicatedServer.PBMultiplayerServer.Core.Messages.MessagePool
 {
-    public abstract class MessagePoolBase<T> where T : NetworkMessage
+    public abstract class MessagePoolBase<T> : IMessagePool<T> where T : NetworkMessage
     {
         private readonly IMessageFactory<T> _messageFactory;
         private readonly Queue<T> _networkMessagesQueue = new();
@@ -14,7 +15,7 @@ namespace MultiplayerDedicatedServer.PBMultiplayerServer.Core.Messages.MessagePo
             _messageFactory = messageFactory;
         }
 
-        public T Retrieve()
+        public T RetrieveMessage()
         {
             T result;
 
@@ -30,6 +31,11 @@ namespace MultiplayerDedicatedServer.PBMultiplayerServer.Core.Messages.MessagePo
             OnCreated(result);
             
             return result;
+        }
+
+        public void ReturnMessage(T message)
+        {
+            
         }
 
         protected abstract void OnCreated(T message);

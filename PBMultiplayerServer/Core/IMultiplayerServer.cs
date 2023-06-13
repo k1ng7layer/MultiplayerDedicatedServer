@@ -2,17 +2,25 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using PBMultiplayerServer.Core.Messages;
+using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 
 namespace PBMultiplayerServer.Core
 {
     public interface IMultiplayerServer : IDisposable
     {
+        TimeSpan ServerTimeSpan { get;}
+        TimeSpan ServerTickDeltaTimeSpan { get;}
+        int ServerTickCount { get;}
+        IEnumerable<Client> ConnectedClients { get; }
         IDictionary<IPEndPoint, Connection> Connections { get; }
         bool IsRunning { get; }
-        Task RunAsync();
-        void Run();
+        void Start();
+        Task UpdateAsync();
+        void Update();
         void Stop();
-        void OnDataReceivedCallback(Action<byte[]> callback);
+        void AddServerTickHandler(Action tickHandler);
+        void AddMessageReceiveHandler(Action<EMessageType, byte[]> message);
     }
 }

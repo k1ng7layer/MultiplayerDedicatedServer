@@ -1,4 +1,4 @@
-﻿namespace PBMultiplayerServer.Core.Data.ByteFormatter
+﻿namespace PBMultiplayerServer.Utils
 {
     public class ByteBuffer
     {

@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace MultiplayerDedicatedServer.Configuration.Impl
+namespace PBMultiplayerServer.Configuration.Impl
 {
     public class DefaultConfiguration : IConfiguration
     {
-        private readonly Dictionary<string, string> _inMemoryConfiguration = new();
+        private readonly Dictionary<string, string> _configurationTable = new();
         
-        public void AddConfiguration(string key, string value)
+        public void Add(string key, string value)
         {
-            if(!_inMemoryConfiguration.ContainsKey(key))
-                _inMemoryConfiguration.Add(key, value);
+            if(!_configurationTable.ContainsKey(key))
+                _configurationTable.Add(key, value);
             else
             {
                 throw new InvalidOperationException(
@@ -27,18 +27,18 @@ namespace MultiplayerDedicatedServer.Configuration.Impl
 
             foreach (var resultKey in result.Keys)
             {
-                if(!_inMemoryConfiguration.ContainsKey(resultKey))
-                    _inMemoryConfiguration.Add(resultKey, result[resultKey]);
+                if(!_configurationTable.ContainsKey(resultKey))
+                    _configurationTable.Add(resultKey, result[resultKey]);
                 else
                 {
-                    _inMemoryConfiguration[resultKey] = result[resultKey];
+                    _configurationTable[resultKey] = result[resultKey];
                 }
             }
         }
 
-        public string GetConfiguration(string key)
+        public string Get(string key)
         {
-            if (_inMemoryConfiguration.TryGetValue(key, out var value))
+            if (_configurationTable.TryGetValue(key, out var value))
                 return value;
             
             throw new InvalidOperationException(
@@ -49,7 +49,7 @@ namespace MultiplayerDedicatedServer.Configuration.Impl
         {
             get
             {
-                if (_inMemoryConfiguration.TryGetValue(key, out var value))
+                if (_configurationTable.TryGetValue(key, out var value))
                     return value;
                 
                 throw new InvalidOperationException(

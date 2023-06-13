@@ -1,70 +1,87 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Core.Factories;
+using PBMultiplayerServer.Transport.Interfaces;
 
 namespace PBMultiplayerServer.Transport.UDP.Impls
 {
-    public class UdpTransport : ITransport
+    public class UdpTransport : NetworkTransport, IDataReceivedListener
     {
-        private readonly ISocketProxy _socket;
-        private CancellationToken _cancellationToken;
-        private readonly List<Action<Connection>> clientConnectedListeners = new();
-
-        public UdpTransport(ISocketProxy socket, IPEndPoint ipEndPoint)
+        private readonly ISocketProxy _socketReceiver;
+        private readonly UdpConnection _serverConnection;
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly Dictionary<IPEndPoint, Connection> _activeClients = new();
+        private bool _running;
+        
+        public UdpTransport(ISocketProxy socketReceiver, EndPoint ipEndPoint)
         {
-            _socket = socket;
-            _socket.Bind(ipEndPoint);
+            _socketReceiver = socketReceiver;
+            _serverConnection = new UdpConnection((IPEndPoint)ipEndPoint, _socketReceiver);
+            _socketReceiver.Bind(ipEndPoint);
         }
 
-        public event Action<Connection> ClientConnected;
-
-        public async Task ProcessAsync(CancellationToken cancellationToken)
+        public override async Task UpdateAsync()
         {
-            _cancellationToken = cancellationToken;
-            
+            if(!_running)
+                return;
+
             try
             {
-                var data = new byte[1024];
-            
-                while (!_cancellationToken.IsCancellationRequested)
-                {
-                    var iEndpoint = new IPEndPoint(IPAddress.Any, 0);
-                    //todo: прочитать про SocketFlags;
-                    var receiveFromResult = await _socket.ReceiveFromAsync(data, SocketFlags.None, iEndpoint);
-                    if (receiveFromResult.ReceivedBytes > 0)
-                    {
-                        OnClientConnected(new UdpConnection(iEndpoint));
-                        await Console.Out.WriteAsync($"user connected via UDP, received bytes = {receiveFromResult.ReceivedBytes} \n");
-                    }
-                }
+                await _serverConnection.ReceiveAsync();
             }
-            catch (SocketException e)
+            catch (Exception e)
             {
                 Console.WriteLine(e);
                 throw;
             }
         }
 
-        public void AddClientConnectedListener(Action<Connection> clientConnectedCallback)
+        public override void Start()
         {
-            
+            _running = true;
+            _serverConnection.AddDataReceivedListener(this);
         }
 
-        private void OnClientConnected(Connection socketProxy)
+        public override void Update()
         {
-            foreach (var listener in clientConnectedListeners)
+            if(_running)
+                _serverConnection.Receive();
+        }
+
+        public override void Stop()  
+        {
+            _running = false;
+            _cancellationTokenSource.Cancel();
+            _serverConnection.CloseConnection();
+        }
+
+        private void OnMessageReceived(byte[] data, int amount, IPEndPoint ipEndPoint)
+        {
+            var hasConnection = _activeClients.ContainsKey(ipEndPoint);
+            
+            if(!hasConnection)
+                _activeClients.Add(ipEndPoint, new UdpConnection(ipEndPoint, _socketReceiver));
+            
+            var connection = _activeClients[ipEndPoint];
+            
+            foreach (var listener in _receiveDataListeners)
             {
-                listener?.Invoke(socketProxy);
+                listener?.Invoke(new DataReceivedEventArgs(data, amount, connection));
             }
         }
 
         public void Dispose()
         {
-            _socket?.Dispose();
+            _socketReceiver?.Dispose();
+            _cancellationTokenSource.Dispose();
+        }
+
+        public void OnDataReceived(byte[] data, int byteCount, IPEndPoint remoteEndpoint)
+        {
+            OnMessageReceived(data, byteCount, remoteEndpoint);
         }
     }
 }
