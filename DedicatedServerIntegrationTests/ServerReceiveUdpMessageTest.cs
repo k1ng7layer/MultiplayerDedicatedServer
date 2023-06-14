@@ -23,7 +23,7 @@ namespace ServerTests
             
             await Task.Delay(1000);
             
-            Assert.True(multiplayerServer.Running);
+            Assert.True(multiplayerServer.IsRunning);
 
             var serverIp = IPAddress.Parse("127.0.0.1");
 

@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using Autofac;
-using PBMultiplayerServer.Configuration;
+using MultiplayerDedicatedServer.Configuration;
 using PBMultiplayerServer.Configuration.Impl;
 using PBMultiplayerServer.Core;
 using PBMultiplayerServer.Core.Factories;

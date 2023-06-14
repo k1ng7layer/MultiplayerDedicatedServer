@@ -16,7 +16,7 @@ namespace ServerTests
             
             multiplayerServer.RunServerAsync();
             
-            Assert.True(multiplayerServer.Running);
+            Assert.True(multiplayerServer.IsRunning);
         }
     }
 }

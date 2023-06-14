@@ -1,4 +1,4 @@
-﻿namespace PBMultiplayerServer.Configuration
+﻿namespace MultiplayerDedicatedServer.Configuration
 {
     public interface IConfiguration
     {
