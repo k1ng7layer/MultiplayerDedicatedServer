@@ -14,7 +14,8 @@ namespace ServerTests
             var config = new DefaultNetworkConfiguration();
             
             var socketFactoryMock = new SocketProxyFactoryMock();
-            var server = new MultiplayerServer(socketFactoryMock, config);
+            var server = new MultiplayerServer(config);
+            server.SocketProxyFactory = socketFactoryMock;
             
             server.UpdateConnectionsAsync();
             

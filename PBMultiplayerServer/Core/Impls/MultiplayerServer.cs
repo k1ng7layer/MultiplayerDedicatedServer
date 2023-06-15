@@ -6,11 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
+using PBMultiplayerServer.Core.Factories.Impl;
 using PBMultiplayerServer.Core.Messages;
-using PBMultiplayerServer.Core.Messages.Factory.Impl;
 using PBMultiplayerServer.Core.Messages.Impl;
 using PBMultiplayerServer.Core.Messages.MessagePool;
-using PBMultiplayerServer.Core.Messages.MessagePool.Impl;
 using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 using PBMultiplayerServer.Transport.TCP;
@@ -20,34 +19,45 @@ namespace PBMultiplayerServer.Core.Impls
 {
     public class MultiplayerServer : IMultiplayerServer
     {
-        private readonly object _locker = new ();
         private readonly INetworkConfiguration _networkConfiguration;
-        private readonly ISocketProxyFactory _socketProxyFactory;
         private readonly Queue<IncomeMessage> _incomeMessageQueue = new();
+        private readonly List<Client> _connectedClients = new();
         private NetworkTransport _tcpTransport;
         private NetworkTransport _udpTransport;
         private CancellationTokenSource _cancellationTokenSource;
         private Dictionary<IPEndPoint, Connection> _connections = new();
-        private List<Client> _connectedClients;
         private IMessagePool<IncomeMessage> _incomeMessagePool;
+        private IMessagePool<OutcomeMessage> _outcomeMessagePool;
         private IMessageProvider _messageProvider;
+        private ISocketProxyFactory _socketProxyFactory;
         
-        public MultiplayerServer(ISocketProxyFactory socketProxyFactory,
-            INetworkConfiguration networkConfiguration)
+        public MultiplayerServer(INetworkConfiguration networkConfiguration)
         {
-            _socketProxyFactory = socketProxyFactory;
             _networkConfiguration = networkConfiguration;
         }
         
         public IEnumerable<Client> ConnectedClients => _connectedClients;
         public IDictionary<IPEndPoint, Connection> Connections => _connections;
+
+        public ISocketProxyFactory SocketProxyFactory
+        {
+            get => _socketProxyFactory ??= new SocketProxyFactory();
+            set => _socketProxyFactory = value;
+        }
+
+        public IMessageProvider MessageProvider
+        {
+            get
+            {
+                return _messageProvider ??= new MessageProvider(_incomeMessagePool, _outcomeMessagePool);
+            }
+            set => _messageProvider = value;
+        }
+        
         public bool IsRunning { get; private set; }
 
         public void Start()
         {
-            var messageFactory = new IncomeMessageFactory();
-            _incomeMessagePool = new IncomeMessagePool(messageFactory);
-            _messageProvider = new MessageProvider(_incomeMessagePool);
             CreateServerConnection();
             IsRunning = true;
             
@@ -115,9 +125,9 @@ namespace PBMultiplayerServer.Core.Impls
             var iEndPointTcp = new IPEndPoint(ipAddress, port);
             var iEndPointUdp = new IPEndPoint(ipAddress, updPort);
 
-            var tcpSocketListener = _socketProxyFactory.CreateSocketProxy(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            var tcpSocketListener = SocketProxyFactory.CreateSocketProxy(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             var udpSocketListener =
-                _socketProxyFactory.CreateSocketProxy(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                SocketProxyFactory.CreateSocketProxy(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             
             _tcpTransport = new TcpTransport(tcpSocketListener, iEndPointTcp, _networkConfiguration);
             _udpTransport = new UdpTransport(udpSocketListener, iEndPointUdp);
