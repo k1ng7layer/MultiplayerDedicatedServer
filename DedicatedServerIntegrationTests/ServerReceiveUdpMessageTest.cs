@@ -23,13 +23,13 @@ namespace ServerTests
             
             await Task.Delay(1000);
             
-            Assert.True(multiplayerServer.Running);
+            Assert.True(multiplayerServer.IsRunning);
 
             var serverIp = IPAddress.Parse("127.0.0.1");
 
             var serverEndPoint = new IPEndPoint(serverIp, 8888);
 
-            await updClient.SendMessage(EMessageType.Connect, serverEndPoint);
+            await updClient.SendMessageAsync(EMessageType.Connect, serverEndPoint);
             
             
         }

@@ -1,8 +1,8 @@
 ﻿namespace PBMultiplayerServer.Core.Messages.Impl
 {
-    public abstract class OutcomeMessage : NetworkMessage
+    public class OutcomeMessage : NetworkMessage
     {
-        protected abstract int DataSize { get; }
+        protected int DataSize { get; }
         public int MessageSize => HEADERS_LENGTH + DataSize;
 
         public void SetMessage(EMessageType messageType, 

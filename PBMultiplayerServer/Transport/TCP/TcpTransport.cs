@@ -8,7 +8,6 @@ using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Stream.Impl;
 using PBMultiplayerServer.Transport.Interfaces;
-using PBMultiplayerServer.Utils;
 
 namespace PBMultiplayerServer.Transport.TCP
 {
@@ -20,17 +19,17 @@ namespace PBMultiplayerServer.Transport.TCP
         private readonly EndPoint _transportIpEndPoint;
         private readonly Dictionary<IPEndPoint, TcpConnection> _activeConnections = new ();
         private readonly CancellationTokenSource _cancellationTokenSource = new();
-        private readonly IConfiguration _configuration;
+        private readonly INetworkConfiguration _networkConfiguration;
         private bool _running;
         private bool _disposedValue;
 
         public TcpTransport(ISocketProxy socketProxy, 
             EndPoint transportIpEndPoint, 
-            IConfiguration configuration)
+            INetworkConfiguration networkConfiguration)
         {
             _socket = socketProxy;
             _transportIpEndPoint = transportIpEndPoint;
-            _configuration = configuration;
+            _networkConfiguration = networkConfiguration;
         }
     
         public override async Task UpdateAsync()
@@ -87,15 +86,13 @@ namespace PBMultiplayerServer.Transport.TCP
         {
             if (_socket.Poll(0, SelectMode.SelectRead))
             {
-                var minMessageSize = int.Parse(_configuration[ConfigurationKeys.MinMessageSize]);
-                
                 var socketProxy = _socket.Accept();
                 
                 var tcpStream = new NetworkStreamProxy(socketProxy);
                 
                 var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, 
                     socketProxy, tcpStream, 
-                    minMessageSize);
+                    _networkConfiguration.MinMessageSize);
               
                 OnClientConnected(tcpConnection);
                 
@@ -116,20 +113,17 @@ namespace PBMultiplayerServer.Transport.TCP
         private async Task HandleNewConnectionAsync(ISocketProxy socketProxy)
         {
             var tcpStream = new NetworkStreamProxy(socketProxy);
-            var minMessageSize = int.Parse(_configuration[ConfigurationKeys.MinMessageSize]);
-            
+
             using (var tcpConnection = new TcpConnection(socketProxy.RemoteEndpoint, 
-                       socketProxy, tcpStream, minMessageSize))
+                       socketProxy, tcpStream, _networkConfiguration.MinMessageSize))
             {
                 try
                 {
                     _activeConnections.Add(socketProxy.RemoteEndpoint, tcpConnection);
                     tcpConnection.StartReceive();
+                    tcpConnection.AddDataReceivedListener(this);
                     var task = tcpConnection.ReceiveAsync();
                    _runningTasks.Add(task);
-                  
-                   tcpConnection.AddDataReceivedListener(this);
-                 
                    await task.ConfigureAwait(false); 
                 }
                 catch (Exception e)

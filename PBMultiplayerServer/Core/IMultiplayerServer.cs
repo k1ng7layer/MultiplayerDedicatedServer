@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Messages;
+using PBMultiplayerServer.Core.Messages.Impl;
 using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 
@@ -10,17 +12,17 @@ namespace PBMultiplayerServer.Core
 {
     public interface IMultiplayerServer : IDisposable
     {
-        TimeSpan ServerTimeSpan { get;}
-        TimeSpan ServerTickDeltaTimeSpan { get;}
-        int ServerTickCount { get;}
+        ISocketProxyFactory SocketProxyFactory { get; set; }
+        IMessageProvider MessageProvider { get; set; }
         IEnumerable<Client> ConnectedClients { get; }
         IDictionary<IPEndPoint, Connection> Connections { get; }
         bool IsRunning { get; }
         void Start();
-        Task UpdateAsync();
-        void Update();
+        Task UpdateConnectionsAsync();
+        void UpdateConnections();
+        Task UpdateEventsAsync(int updateTickRate);
+        void UpdateEvents();
         void Stop();
-        void AddServerTickHandler(Action tickHandler);
-        void AddMessageReceiveHandler(Action<EMessageType, byte[]> message);
+        void AddIncomeMessageListeners(Action<IncomeMessage> incomeMessageCallback);
     }
 }

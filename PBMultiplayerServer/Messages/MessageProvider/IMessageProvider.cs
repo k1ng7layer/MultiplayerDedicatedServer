@@ -4,7 +4,7 @@ namespace PBMultiplayerServer.Core.Messages
 {
     public interface IMessageProvider
     {
-        IncomeMessage CreateConnectionRejectMessage(EMessageType messageType, ERejectReason rejectReason);
-        EMessageType GetMessageType(byte[] messageBytes);
+        internal IncomeMessage CreateConnectionRejectMessage(EMessageType messageType, ERejectReason rejectReason);
+        internal EMessageType GetMessageType(byte[] messageBytes);
     }
 }

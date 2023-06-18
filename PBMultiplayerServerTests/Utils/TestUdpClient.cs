@@ -8,13 +8,13 @@ namespace ServerTests.Utils
 {
     public class TestUdpClient
     {
-        public async Task SendMessage(EMessageType messageType, IPEndPoint destinationEndpoint)
+        public async Task SendMessageAsync(EMessageType messageType, IPEndPoint destinationEndpoint)
         {
             using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             
             var data = BitConverter.GetBytes((int)messageType);
     
-            await sender.SendToAsync(data,SocketFlags.None, destinationEndpoint);
+            await sender.SendToAsync(data, SocketFlags.None, destinationEndpoint);
         }
     }
 }
