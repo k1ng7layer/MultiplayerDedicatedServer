@@ -121,11 +121,9 @@ namespace PBMultiplayerServer.Transport.TCP
                 {
                     _activeConnections.Add(socketProxy.RemoteEndpoint, tcpConnection);
                     tcpConnection.StartReceive();
+                    tcpConnection.AddDataReceivedListener(this);
                     var task = tcpConnection.ReceiveAsync();
                    _runningTasks.Add(task);
-                  
-                   tcpConnection.AddDataReceivedListener(this);
-                 
                    await task.ConfigureAwait(false); 
                 }
                 catch (Exception e)

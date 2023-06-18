@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Messages;
+using PBMultiplayerServer.Core.Messages.Impl;
 using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 
@@ -22,5 +23,6 @@ namespace PBMultiplayerServer.Core
         Task UpdateEventsAsync(int updateTickRate);
         void UpdateEvents();
         void Stop();
+        void AddIncomeMessageListeners(Action<IncomeMessage> incomeMessageCallback);
     }
 }

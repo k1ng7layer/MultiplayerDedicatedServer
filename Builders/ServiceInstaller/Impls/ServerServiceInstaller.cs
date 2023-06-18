@@ -28,10 +28,7 @@ namespace MultiplayerDedicatedServer.Builders.ServiceInstaller.Impls
             
             builder.RegisterInstance<IConfiguration>(configuration);
             builder.RegisterInstance<INetworkConfiguration>(networkConfig);
-
             builder.RegisterType<MultiplayerServer>().As<IMultiplayerServer>().SingleInstance();
         }
-        
-        
     }
 }

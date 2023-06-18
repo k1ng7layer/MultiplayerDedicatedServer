@@ -8,8 +8,10 @@ using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Factories.Impl;
 using PBMultiplayerServer.Core.Messages;
+using PBMultiplayerServer.Core.Messages.Factory.Impl;
 using PBMultiplayerServer.Core.Messages.Impl;
 using PBMultiplayerServer.Core.Messages.MessagePool;
+using PBMultiplayerServer.Core.Messages.MessagePool.Impl;
 using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 using PBMultiplayerServer.Transport.TCP;
@@ -30,7 +32,8 @@ namespace PBMultiplayerServer.Core.Impls
         private IMessagePool<OutcomeMessage> _outcomeMessagePool;
         private IMessageProvider _messageProvider;
         private ISocketProxyFactory _socketProxyFactory;
-        
+        private Action<IncomeMessage> _incomeMessageCallback;
+
         public MultiplayerServer(INetworkConfiguration networkConfiguration)
         {
             _networkConfiguration = networkConfiguration;
@@ -60,6 +63,12 @@ namespace PBMultiplayerServer.Core.Impls
         {
             CreateServerConnection();
             IsRunning = true;
+
+            var incomeMessageFactory = new IncomeMessageFactory();
+            var outcomeMessageFactory = new OutcomeMessageFactory();
+            
+            _incomeMessagePool = new IncomeMessagePool(incomeMessageFactory);
+            _outcomeMessagePool = new OutcomeMessagePool(outcomeMessageFactory);
             
             _tcpTransport.Start();
             _udpTransport.Start();
@@ -68,7 +77,10 @@ namespace PBMultiplayerServer.Core.Impls
         public Task UpdateConnectionsAsync()
         {
             _cancellationTokenSource = new CancellationTokenSource();
-
+            
+            if(!IsRunning)
+                return Task.FromCanceled(_cancellationTokenSource.Token);
+            
             var serverMainTasks = new List<Task>();
             
             var tcpConnectionTask = Task.Run(async () => await _tcpTransport.UpdateAsync());
@@ -116,6 +128,11 @@ namespace PBMultiplayerServer.Core.Impls
             _udpTransport.Stop();
         }
 
+        public void AddIncomeMessageListeners(Action<IncomeMessage> incomeMessageCallback)
+        {
+            _incomeMessageCallback = incomeMessageCallback;
+        }
+        
         private void CreateServerConnection()
         {
             var ipAddress = IPAddress.Parse(_networkConfiguration.IpAddress);
@@ -138,7 +155,7 @@ namespace PBMultiplayerServer.Core.Impls
 
         private async Task OnDataReceived(DataReceivedEventArgs dataReceivedEventArgs)
         {
-            var messageType = _messageProvider.GetMessageType(dataReceivedEventArgs.DataBuffer);
+            var messageType = MessageProvider.GetMessageType(dataReceivedEventArgs.DataBuffer);
             Console.WriteLine($"OnDataReceived, type = {messageType}");
             var message = _incomeMessagePool.RetrieveMessage();
             message.SetHeader(messageType, dataReceivedEventArgs.DataBuffer);
@@ -160,17 +177,7 @@ namespace PBMultiplayerServer.Core.Impls
 
         private void HandleIncomeMessage(IncomeMessage message)
         {
-            switch (message.MessageType)
-            {
-                case EMessageType.Connect:
-                    break;
-                case EMessageType.Reject:
-                    break;
-                case EMessageType.StartSession:
-                    break;
-                case EMessageType.JoinSession:
-                    break;
-            }
+            _incomeMessageCallback.Invoke(message);
         }
 
         public void Dispose()

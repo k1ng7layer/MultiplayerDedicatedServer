@@ -6,7 +6,7 @@ namespace PBMultiplayerServer.Core.Messages.Factory.Impl
     {
         public OutcomeMessage Create(params object[] args)
         {
-            return default;
+            return new OutcomeMessage();
         }
     }
 }

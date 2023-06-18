@@ -29,7 +29,7 @@ namespace ServerTests
 
             var serverEndPoint = new IPEndPoint(serverIp, 8888);
 
-            await updClient.SendMessage(EMessageType.Connect, serverEndPoint);
+            await updClient.SendMessageAsync(EMessageType.Connect, serverEndPoint);
             
             
         }

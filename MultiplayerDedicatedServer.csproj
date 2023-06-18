@@ -28,6 +28,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="PBMultiplayerServerTests\bin" />
+      <Folder Include="PBMultiplayerServerTests\obj" />
       <Folder Include="PBMultiplayerServer\Core\Messages\MessagePool\Impl" />
     </ItemGroup>
 
