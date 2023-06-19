@@ -58,6 +58,12 @@ namespace PBMultiplayerServer.Transport.UDP.Impls
             _serverConnection.CloseConnection();
         }
 
+        public override void CloseConnection(Connection connection)
+        {
+            if (_activeClients.ContainsKey(connection.RemoteEndpoint))
+                _activeClients.Remove(connection.RemoteEndpoint);
+        }
+
         private void OnMessageReceived(byte[] data, int amount, IPEndPoint ipEndPoint)
         {
             var hasConnection = _activeClients.ContainsKey(ipEndPoint);

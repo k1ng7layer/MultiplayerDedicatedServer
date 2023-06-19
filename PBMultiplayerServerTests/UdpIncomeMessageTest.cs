@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using PBMultiplayerServer.Authentication;
 using PBMultiplayerServer.Configuration.Impl;
 using PBMultiplayerServer.Core.Impls;
 using PBMultiplayerServer.Core.Messages;
@@ -12,6 +13,16 @@ namespace ServerTests
     public class UdpIncomeMessageTest
     {
         private int messageReceiveCount;
+        private MultiplayerServer _multiplayerServer;
+        private TestUdpClient _client;
+
+        [TearDown]
+        public void TearDown()
+        {
+            _multiplayerServer.Stop();
+            _multiplayerServer.Dispose();
+            _client.Dispose();
+        }
         
         [Test, MaxTime(4000)]
         public async Task TestUdpIncomeMessage()
@@ -30,22 +41,23 @@ namespace ServerTests
                 MinMessageSize = 4,
             };
 
-            var server = new MultiplayerServer(config);
+            _multiplayerServer = new MultiplayerServer(config);
             
-            server.Start();
+            _multiplayerServer.Start();
             
-            server.AddIncomeMessageListeners(HandleIncomeMessage);
+            _multiplayerServer.AddIncomeMessageListeners(HandleIncomeMessage);
+            _multiplayerServer.AddApprovalCallback(OnClientConnected);
             
-            Assert.True(server.IsRunning);
+            Assert.True(_multiplayerServer.IsRunning);
             
-            Task.Run(async () => server.UpdateConnectionsAsync());
-            Task.Run(async () => server.UpdateEventsAsync(1000 / 30));
+            Task.Run(async () => _multiplayerServer.UpdateConnectionsAsync());
+            Task.Run(async () => _multiplayerServer.UpdateEventsAsync(1000 / 30));
 
             await Task.Delay(1000);
 
-            var testUdpClient = new TestUdpClient();
+            _client = new TestUdpClient();
 
-            await testUdpClient.SendMessageAsync(EMessageType.Connect, serverEndPoint);
+            await _client.SendMessageAsync(EMessageType.Connect, serverEndPoint);
             
             await Task.Delay(2000);
             
@@ -57,6 +69,11 @@ namespace ServerTests
         {
             Assert.True(message.MessageType == EMessageType.Connect);
             messageReceiveCount++;
+        }
+
+        private LoginResult OnClientConnected(byte[] data)
+        {
+            return new LoginResult(ELoginResult.Success, string.Empty);
         }
     }
 }

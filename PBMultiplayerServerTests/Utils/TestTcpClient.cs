@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ServerTests.Utils
 {
-    public class TestTcpClient
+    public class TestTcpClient : IDisposable
     {
         private Socket _socket;
         private NetworkStream _networkStream;
@@ -41,6 +41,12 @@ namespace ServerTests.Utils
                 var bytes = BitConverter.GetBytes(messageType);
                 await SendMessage(bytes);
             }
+        }
+
+        public void Dispose()
+        {
+            _socket?.Dispose();
+            _networkStream?.Dispose();
         }
     }
 }

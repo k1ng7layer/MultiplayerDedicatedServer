@@ -199,6 +199,7 @@ namespace PBMultiplayerServer.Core.Impls
                     if (loginResult.Result == ELoginResult.Success)
                         Approve(pendingMessage.Sender, loginResult.Message);
                     else Reject(pendingMessage.Sender, loginResult.Message);
+                    _incomeMessageCallback.Invoke(pendingMessage.Message);
                     break;
                 case EMessageType.StartSession:
                     break;

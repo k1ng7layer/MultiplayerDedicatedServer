@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using PBMultiplayerServer.Authentication;
 using PBMultiplayerServer.Configuration.Impl;
 using PBMultiplayerServer.Core.Impls;
 using PBMultiplayerServer.Core.Messages;
@@ -13,6 +14,17 @@ namespace ServerTests
     public class TcpIncomeMessageTest
     {
         private int messageReceiveCount;
+        private MultiplayerServer _multiplayerServer;
+        private TestTcpClient _client;
+
+        [TearDown]
+        public void TearDown()
+        {
+            _multiplayerServer.Stop();
+            _multiplayerServer.Dispose();
+            _client.Dispose();
+        }
+        
         
         [Test, MaxTime(4000)]
         public async Task TestTcpIncomeMessage()
@@ -29,26 +41,27 @@ namespace ServerTests
                 MinMessageSize = 4,
             };
 
-            var server = new MultiplayerServer(config);
+            _multiplayerServer = new MultiplayerServer(config);
             
-            server.AddIncomeMessageListeners(HandleIncomeMessage);
-            server.Start();
+            _multiplayerServer.AddIncomeMessageListeners(HandleIncomeMessage);
+            _multiplayerServer.AddApprovalCallback(OnClientConnected);
+            _multiplayerServer.Start();
             
-            Assert.True(server.IsRunning);
+            Assert.True(_multiplayerServer.IsRunning);
             
-            Task.Run(async () => server.UpdateConnectionsAsync());
-            Task.Run(async () => server.UpdateEventsAsync(1000/30));
+            Task.Run(async () => _multiplayerServer.UpdateConnectionsAsync());
+            Task.Run(async () => _multiplayerServer.UpdateEventsAsync(1000/30));
 
             await Task.Delay(2000);
 
-            var tcpClient = new TestTcpClient();
+            _client = new TestTcpClient();
             
-            await tcpClient.ConnectAsync(serverEndPoint);
+            await _client.ConnectAsync(serverEndPoint);
             
             var messageTypeBytes = BitConverter.GetBytes((int)EMessageType.Connect);
             var messageLenghtBytes = BitConverter.GetBytes(sizeof(int));
-            await tcpClient.SendMessageAsync(messageLenghtBytes);
-            await tcpClient.SendMessageAsync(messageTypeBytes);
+            await _client.SendMessageAsync(messageLenghtBytes);
+            await _client.SendMessageAsync(messageTypeBytes);
             
             await Task.Delay(1000);
             
@@ -59,6 +72,11 @@ namespace ServerTests
         {
             Assert.True(message.MessageType == EMessageType.Connect);
             messageReceiveCount++;
+        }
+        
+        private LoginResult OnClientConnected(byte[] data)
+        {
+            return new LoginResult(ELoginResult.Success, string.Empty);
         }
     }
 }
