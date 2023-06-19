@@ -82,6 +82,18 @@ namespace PBMultiplayerServer.Transport.TCP
             _socket.Close();
         }
 
+        public override void CloseConnection(Connection connection)
+        {
+            var endPoint = connection.RemoteEndpoint;
+            
+            if (!_activeConnections.ContainsKey(endPoint))
+                return;
+
+            var clientConnection = _activeConnections[endPoint];
+            clientConnection.CloseConnection();
+            _activeConnections.Remove(endPoint);
+        }
+
         private void Accept()
         {
             if (_socket.Poll(0, SelectMode.SelectRead))

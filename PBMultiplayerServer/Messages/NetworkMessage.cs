@@ -46,7 +46,7 @@ namespace PBMultiplayerServer.Core.Messages
             WritePos += sizeof(float);
         }
         
-        protected void AddString(string value)
+        public void AddString(string value)
         {
             var bytes = Encoding.ASCII.GetBytes(value);
             
@@ -58,7 +58,7 @@ namespace PBMultiplayerServer.Core.Messages
             WritePos += bytes.Length;
         }
         
-        protected void AddBytes(byte[] bytes)
+        public void AddBytes(byte[] bytes)
         {
             for (int i = 0; i < bytes.Length; i++)
             {
@@ -68,7 +68,7 @@ namespace PBMultiplayerServer.Core.Messages
             WritePos += bytes.Length;
         }
         
-        protected void AddUshort(ushort value)
+        public void AddUshort(ushort value)
         {
             var bytes = BitConverter.GetBytes(value);
 

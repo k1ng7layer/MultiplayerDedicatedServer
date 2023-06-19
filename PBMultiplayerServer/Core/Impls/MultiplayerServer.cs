@@ -25,14 +25,14 @@ namespace PBMultiplayerServer.Core.Impls
         private readonly INetworkConfiguration _networkConfiguration;
         private readonly Queue<PendingMessage> _incomeMessageQueue = new();
         private readonly List<Client> _connectedClients = new();
-        private NetworkTransport _tcpTransport;
-        private NetworkTransport _udpTransport;
-        private CancellationTokenSource _cancellationTokenSource;
-        private Dictionary<IPEndPoint, Connection> _connections = new();
         private IMessagePool<IncomeMessage> _incomeMessagePool;
         private IMessagePool<OutcomeMessage> _outcomeMessagePool;
         private IMessageProvider _messageProvider;
         private ISocketProxyFactory _socketProxyFactory;
+        private NetworkTransport _tcpTransport;
+        private NetworkTransport _udpTransport;
+        private CancellationTokenSource _cancellationTokenSource;
+        private Dictionary<IPEndPoint, Connection> _connections = new();
         private Action<IncomeMessage> _incomeMessageCallback;
         private Func<byte[], LoginResult> _connectionApproveHandler;
         private Func<Task<byte[]>, LoginResult> _connectionApproveTaskHandler;
@@ -166,7 +166,7 @@ namespace PBMultiplayerServer.Core.Impls
             _udpTransport.AddMessageReceivedListener(OnDataReceived);
         }
 
-        private async Task OnDataReceived(DataReceivedEventArgs dataReceivedEventArgs)
+        private void OnDataReceived(DataReceivedEventArgs dataReceivedEventArgs)
         {
             var messageType = MessageProvider.GetMessageType(dataReceivedEventArgs.DataBuffer);
             Console.WriteLine($"OnDataReceived, type = {messageType}");
@@ -193,6 +193,7 @@ namespace PBMultiplayerServer.Core.Impls
         {
             switch (pendingMessage.Message.MessageType)
             {
+                case EMessageType.JoinSession:
                 case EMessageType.Connect:
                     var loginResult = _connectionApproveHandler(pendingMessage.Message.Bytes);
                     if (loginResult.Result == ELoginResult.Success)
@@ -201,8 +202,8 @@ namespace PBMultiplayerServer.Core.Impls
                     break;
                 case EMessageType.StartSession:
                     break;
-                case EMessageType.JoinSession:
-                    break;
+                    case EMessageType.Disconnect:
+                        break;
                 case EMessageType.Custom:
                     _incomeMessageCallback.Invoke(pendingMessage.Message);
                     break;
@@ -211,12 +212,20 @@ namespace PBMultiplayerServer.Core.Impls
 
         private void Reject(Connection messageSender, string reason)
         {
+            var message = _messageProvider.CreateConnectionRejectMessage(EMessageType.Reject, reason);
             
+            messageSender.Send(message.Bytes);
+            
+            _outcomeMessagePool.ReturnMessage(message);
+            
+            _tcpTransport.CloseConnection(messageSender);
         }
 
         private void Approve(Connection messageSender, string message)
         {
+            var client = new Client(messageSender);
             
+            _connectedClients.Add(client);
         }
 
         public void Dispose()

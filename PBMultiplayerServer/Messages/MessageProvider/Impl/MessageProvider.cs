@@ -16,12 +16,12 @@ namespace PBMultiplayerServer.Core.Messages
             _outcomeMessagePool = outcomeMessagePool;
         }
 
-        IncomeMessage IMessageProvider.CreateConnectionRejectMessage(EMessageType messageType, ERejectReason rejectReason)
+        OutcomeMessage IMessageProvider.CreateConnectionRejectMessage(EMessageType messageType, string rejectReason)
         {
-            var message = _incomeMessagePool.RetrieveMessage();
+            var message = _outcomeMessagePool.RetrieveMessage();
           
             message.AddInt((int)messageType);
-            message.AddInt((int)rejectReason);
+            message.AddString(rejectReason);
             
             return message;
         }
