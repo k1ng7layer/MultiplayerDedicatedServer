@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using PBMultiplayerServer.Authentication;
 using PBMultiplayerServer.Configuration;
 using PBMultiplayerServer.Core.Factories;
 using PBMultiplayerServer.Core.Factories.Impl;
@@ -22,7 +23,7 @@ namespace PBMultiplayerServer.Core.Impls
     public class MultiplayerServer : IMultiplayerServer
     {
         private readonly INetworkConfiguration _networkConfiguration;
-        private readonly Queue<IncomeMessage> _incomeMessageQueue = new();
+        private readonly Queue<PendingMessage> _incomeMessageQueue = new();
         private readonly List<Client> _connectedClients = new();
         private NetworkTransport _tcpTransport;
         private NetworkTransport _udpTransport;
@@ -33,6 +34,8 @@ namespace PBMultiplayerServer.Core.Impls
         private IMessageProvider _messageProvider;
         private ISocketProxyFactory _socketProxyFactory;
         private Action<IncomeMessage> _incomeMessageCallback;
+        private Func<byte[], LoginResult> _connectionApproveHandler;
+        private Func<Task<byte[]>, LoginResult> _connectionApproveTaskHandler;
 
         public MultiplayerServer(INetworkConfiguration networkConfiguration)
         {
@@ -133,6 +136,16 @@ namespace PBMultiplayerServer.Core.Impls
             _incomeMessageCallback = incomeMessageCallback;
         }
         
+        public void AddApprovalCallback(Func<byte[], LoginResult> callback)
+        {
+            _connectionApproveHandler = callback;
+        }
+        
+        public void AddApprovalCallback(Func<Task<byte[]>, LoginResult> callback)
+        {
+            _connectionApproveTaskHandler = callback;
+        }
+        
         private void CreateServerConnection()
         {
             var ipAddress = IPAddress.Parse(_networkConfiguration.IpAddress);
@@ -160,7 +173,8 @@ namespace PBMultiplayerServer.Core.Impls
             var message = _incomeMessagePool.RetrieveMessage();
             message.SetHeader(messageType, dataReceivedEventArgs.DataBuffer);
             
-            _incomeMessageQueue.Enqueue(message);
+            if(dataReceivedEventArgs.Sender.Approved || messageType is EMessageType.Connect or EMessageType.JoinSession)
+                _incomeMessageQueue.Enqueue(new PendingMessage(message, dataReceivedEventArgs.Sender));
         }
 
         private void ReadMessageQueue()
@@ -171,13 +185,38 @@ namespace PBMultiplayerServer.Core.Impls
                 
                 HandleIncomeMessage(message);
                 
-                _incomeMessagePool.ReturnMessage(message);
+                _incomeMessagePool.ReturnMessage(message.Message);
             }
         }
 
-        private void HandleIncomeMessage(IncomeMessage message)
+        private void HandleIncomeMessage(PendingMessage pendingMessage)
         {
-            _incomeMessageCallback.Invoke(message);
+            switch (pendingMessage.Message.MessageType)
+            {
+                case EMessageType.Connect:
+                    var loginResult = _connectionApproveHandler(pendingMessage.Message.Bytes);
+                    if (loginResult.Result == ELoginResult.Success)
+                        Approve(pendingMessage.Sender, loginResult.Message);
+                    else Reject(pendingMessage.Sender, loginResult.Message);
+                    break;
+                case EMessageType.StartSession:
+                    break;
+                case EMessageType.JoinSession:
+                    break;
+                case EMessageType.Custom:
+                    _incomeMessageCallback.Invoke(pendingMessage.Message);
+                    break;
+            }
+        }
+
+        private void Reject(Connection messageSender, string reason)
+        {
+            
+        }
+
+        private void Approve(Connection messageSender, string message)
+        {
+            
         }
 
         public void Dispose()
