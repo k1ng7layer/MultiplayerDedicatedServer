@@ -16,6 +16,7 @@ namespace PBMultiplayerServer.Transport
         }
         
         public IPEndPoint RemoteEndpoint { get; }
+        public bool Approved { get; set; }
 
         public abstract void StartReceive();
         public abstract Task ReceiveAsync();

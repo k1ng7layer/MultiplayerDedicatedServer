@@ -35,9 +35,11 @@ namespace MultiplayerDedicatedServer.PBMultiplayerServer.Core.Messages.MessagePo
 
         public void ReturnMessage(T message)
         {
-            
+            OnReturn(message);
         }
 
         protected abstract void OnCreated(T message);
+        protected virtual void OnReturn(T message)
+        {}
     }
 }

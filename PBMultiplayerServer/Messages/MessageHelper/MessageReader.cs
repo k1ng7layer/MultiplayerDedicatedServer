@@ -7,7 +7,7 @@ namespace PBMultiplayerServer.Core.Messages.MessageHelper
     {
          public static ushort GetUshort(this NetworkMessage message, int startIndex)
         {
-            var intSpan = new Span<byte>(message.Message, startIndex, sizeof(ushort));
+            var intSpan = new Span<byte>(message.Bytes, startIndex, sizeof(ushort));
             var result = BitConverter.ToUInt16(intSpan);
 
             return result;
@@ -15,7 +15,7 @@ namespace PBMultiplayerServer.Core.Messages.MessageHelper
         
         public static ushort GetUshort(this NetworkMessage message)
         {
-            var intSpan = new Span<byte>(message.Message, message.WritePos, sizeof(ushort));
+            var intSpan = new Span<byte>(message.Bytes, message.WritePos, sizeof(ushort));
             var result = BitConverter.ToUInt16(intSpan);
             
             message.WritePos += sizeof(ushort);
@@ -25,7 +25,7 @@ namespace PBMultiplayerServer.Core.Messages.MessageHelper
     
         public static int GetInt(this NetworkMessage message)
         {
-            var intSpan = new Span<byte>(message.Message, message.WritePos, sizeof(int));
+            var intSpan = new Span<byte>(message.Bytes, message.WritePos, sizeof(int));
             var result = BitConverter.ToInt32(intSpan);
             
             message.WritePos += sizeof(int);
@@ -43,7 +43,7 @@ namespace PBMultiplayerServer.Core.Messages.MessageHelper
         
         public static float GetFloat(this NetworkMessage message)
         {
-            var intSpan = new Span<byte>(message.Message, message.WritePos, sizeof(float));
+            var intSpan = new Span<byte>(message.Bytes, message.WritePos, sizeof(float));
             var result = BitConverter.ToSingle(intSpan);
             
             message.WritePos += sizeof(float);
@@ -63,7 +63,7 @@ namespace PBMultiplayerServer.Core.Messages.MessageHelper
 
         public static bool GetBool(this NetworkMessage message)
         {
-            var span = new Span<byte>(message.Message, message.WritePos, 1);
+            var span = new Span<byte>(message.Bytes, message.WritePos, 1);
             var value = BitConverter.ToBoolean(span);
             
             message.WritePos++;
@@ -84,9 +84,9 @@ namespace PBMultiplayerServer.Core.Messages.MessageHelper
         public static Vector3 GetVector3(this NetworkMessage message, int startIndex)
         {
             var length = sizeof(float);
-            var xSpan = new Span<byte>(message.Message, startIndex, length);
-            var ySpan = new Span<byte>(message.Message, startIndex + length, length);
-            var zSpan = new Span<byte>(message.Message, startIndex + length * 2, length);
+            var xSpan = new Span<byte>(message.Bytes, startIndex, length);
+            var ySpan = new Span<byte>(message.Bytes, startIndex + length, length);
+            var zSpan = new Span<byte>(message.Bytes, startIndex + length * 2, length);
             
             var x = BitConverter.ToSingle(xSpan);
             var y = BitConverter.ToSingle(ySpan);

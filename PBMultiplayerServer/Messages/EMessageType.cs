@@ -5,6 +5,8 @@
         Connect,
         Reject,
         StartSession,
-        JoinSession
+        JoinSession,
+        Disconnect,
+        Custom
     }
 }

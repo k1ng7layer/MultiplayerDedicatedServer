@@ -14,5 +14,10 @@ namespace PBMultiplayerServer.Core.Messages.MessagePool.Impl
         {
             
         }
+
+        protected override void OnReturn(IncomeMessage message)
+        {
+            
+        }
     }
 }
