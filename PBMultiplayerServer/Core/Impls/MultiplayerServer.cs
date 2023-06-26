@@ -6,13 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using PBMultiplayerServer.Authentication;
 using PBMultiplayerServer.Configuration;
+using PBMultiplayerServer.Core.Abstractions;
 using PBMultiplayerServer.Core.Factories;
-using PBMultiplayerServer.Core.Factories.Impl;
 using PBMultiplayerServer.Core.Messages;
-using PBMultiplayerServer.Core.Messages.Factory.Impl;
 using PBMultiplayerServer.Core.Messages.Impl;
-using PBMultiplayerServer.Core.Messages.MessagePool;
-using PBMultiplayerServer.Core.Messages.MessagePool.Impl;
 using PBMultiplayerServer.Data;
 using PBMultiplayerServer.Transport;
 using PBMultiplayerServer.Transport.TCP;
@@ -20,13 +17,12 @@ using PBMultiplayerServer.Transport.UDP.Impls;
 
 namespace PBMultiplayerServer.Core.Impls
 {
-    public class MultiplayerServer : IMultiplayerServer
+    public class MultiplayerServer : MultiplayerServerBase,  
+        IMultiplayerServer
     {
         private readonly INetworkConfiguration _networkConfiguration;
         private readonly Queue<PendingMessage> _incomeMessageQueue = new();
         private readonly List<Client> _connectedClients = new();
-        private IMessagePool<IncomeMessage> _incomeMessagePool;
-        private IMessagePool<OutcomeMessage> _outcomeMessagePool;
         private IMessageProvider _messageProvider;
         private ISocketProxyFactory _socketProxyFactory;
         private NetworkTransport _tcpTransport;
@@ -44,22 +40,6 @@ namespace PBMultiplayerServer.Core.Impls
         
         public IEnumerable<Client> ConnectedClients => _connectedClients;
         public IDictionary<IPEndPoint, Connection> Connections => _connections;
-
-        public ISocketProxyFactory SocketProxyFactory
-        {
-            get => _socketProxyFactory ??= new SocketProxyFactory();
-            set => _socketProxyFactory = value;
-        }
-
-        public IMessageProvider MessageProvider
-        {
-            get
-            {
-                return _messageProvider ??= new MessageProvider(_incomeMessagePool, _outcomeMessagePool);
-            }
-            set => _messageProvider = value;
-        }
-        
         public bool IsRunning { get; private set; }
 
         public void Start()
@@ -67,12 +47,6 @@ namespace PBMultiplayerServer.Core.Impls
             CreateServerConnection();
             IsRunning = true;
 
-            var incomeMessageFactory = new IncomeMessageFactory();
-            var outcomeMessageFactory = new OutcomeMessageFactory();
-            
-            _incomeMessagePool = new IncomeMessagePool(incomeMessageFactory);
-            _outcomeMessagePool = new OutcomeMessagePool(outcomeMessageFactory);
-            
             _tcpTransport.Start();
             _udpTransport.Start();
         }
@@ -170,7 +144,7 @@ namespace PBMultiplayerServer.Core.Impls
         {
             var messageType = MessageProvider.GetMessageType(dataReceivedEventArgs.DataBuffer);
             Console.WriteLine($"OnDataReceived, type = {messageType}");
-            var message = _incomeMessagePool.RetrieveMessage();
+            var message = IncomeMessagePool.RetrieveMessage();
             message.SetHeader(messageType, dataReceivedEventArgs.DataBuffer);
             
             if(dataReceivedEventArgs.Sender.Approved || messageType is EMessageType.Connect or EMessageType.JoinSession)
@@ -185,7 +159,7 @@ namespace PBMultiplayerServer.Core.Impls
                 
                 HandleIncomeMessage(message);
                 
-                _incomeMessagePool.ReturnMessage(message.Message);
+                IncomeMessagePool.ReturnMessage(message.Message);
             }
         }
 
@@ -217,7 +191,7 @@ namespace PBMultiplayerServer.Core.Impls
             
             messageSender.Send(message.Bytes);
             
-            _outcomeMessagePool.ReturnMessage(message);
+            OutcomeMessagePool.ReturnMessage(message);
             
             _tcpTransport.CloseConnection(messageSender);
         }

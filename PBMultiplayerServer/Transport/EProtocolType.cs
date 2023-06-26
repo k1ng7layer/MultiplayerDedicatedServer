@@ -2,8 +2,8 @@
 {
     public enum EProtocolType
     {
-        UDP,
-        TCP,
-        UDP_TCP,
+       TCP,
+       UDP,
+       RUDP,
     }
 }

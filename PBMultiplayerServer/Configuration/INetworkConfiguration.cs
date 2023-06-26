@@ -5,5 +5,6 @@
         int MinMessageSize { get; set; }
         string IpAddress { get; set; }
         int Port { get; set; }
+        int MTU { get; set; }
     }
 }

@@ -4,4 +4,5 @@
     &lt;Project Location="D:\GITRepository\MultiplayerDedicatedServer\DedicatedServerIntegrationTests" Presentation="&amp;lt;DedicatedServerIntegrationTests&amp;gt;" /&gt;&#xD;
     &lt;Project Location="D:\GITRepository\MultiplayerDedicatedServer\PBMultiplayerServerTests" Presentation="&amp;lt;PBMultiplayerServerTests&amp;gt;" /&gt;&#xD;
   &lt;/Or&gt;&#xD;
-&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
+&lt;/SessionState&gt;</s:String>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=RUDP/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>
