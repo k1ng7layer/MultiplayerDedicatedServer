@@ -83,6 +83,7 @@ namespace PBMultiplayerServer.Core.Impls
             while (IsRunning && !_cancellationTokenSource.IsCancellationRequested)
             {
                 ReadMessageQueue();
+                
                 await Task.Delay(updateTickRateMilliseconds);
             }
         }
